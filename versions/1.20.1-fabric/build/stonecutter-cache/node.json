@@ -1,0 +1,25 @@
+{
+    "project": "1.20.1-fabric",
+    "version": "1.20.1",
+    "active": true,
+    "branch": {
+        "id": "",
+        "path": "/home/salad/Documents/GitHub/Syrup-Studios/colorful_armor_bar"
+    },
+    "root": "/home/salad/Documents/GitHub/Syrup-Studios/colorful_armor_bar",
+    "parameters": {
+        "constants": {
+            "fabric": true
+        },
+        "dependencies": {
+            "": {
+                "type": "dev.kikugie.semver.data.SemanticVersion",
+                "components": [
+                    1,
+                    20,
+                    1
+                ]
+            }
+        }
+    }
+}

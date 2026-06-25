@@ -1,0 +1,21 @@
+{
+    "stonecutter": "0.7.10",
+    "vcs": "1.20.1-fabric",
+    "current": "1.20.1-fabric",
+    "branches": [
+        {
+            "id": "",
+            "path": "/home/salad/Documents/GitHub/Syrup-Studios/colorful_armor_bar"
+        }
+    ],
+    "nodes": [
+        {
+            "project": "1.20.1-fabric",
+            "version": "1.20.1",
+            "active": true,
+            "path": "/home/salad/Documents/GitHub/Syrup-Studios/colorful_armor_bar/versions/1.20.1-fabric"
+        }
+    ],
+    "flags": {},
+    "current_provider": "name@1.20.1-fabric"
+}
