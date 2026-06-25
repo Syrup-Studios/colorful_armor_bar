@@ -10,11 +10,8 @@
 	"icon": "assets/colorful_armor_bar/icon.png",
 	"environment": "client",
 	"entrypoints": {
-		"main": [
-			"net.syrupstudios.colorfularmorbar.ColorfulArmorBar"
-		],
 		"client": [
-			"net.syrupstudios.colorfularmorbar.client.ColorfulArmorBarClient"
+			"net.syrupstudios.colorfularmorbar.ColorfulArmorBar"
 		]
 	},
 	"mixins": [
