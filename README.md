@@ -3,7 +3,7 @@
 Tired of Netherite, Diamond, and Leather looking exactly the same on your HUD? **Colorful Armor Bar** is a lightweight, client-side mod that colors your armor bar icons based on the exact gear you're wearing. 
 
 ## How it Works
-The visual idea is inspired by *Detail Armor Bar*, but under the hood, this mod takes a completely data-driven approach. 
+The project is heavily inspired by [*Detail Armor Bar*](https://modrinth.com/mod/detail-armor-bar), but under the hood, this mod takes a completely data-driven approach. 
 
 Instead of hardcoding compatibility or waiting for backend code updates, everything is driven by resource packs. Out of the box, the mod dynamically scans for textures mapped to your armor materials. If a mod adds a new armor tier, anyone can easily add flawless visual support for it with a resource pack—no code changes required.
 
