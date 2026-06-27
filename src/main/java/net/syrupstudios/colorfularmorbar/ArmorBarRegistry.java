@@ -20,7 +20,7 @@ public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener
 
     public static ResourceLocation getTexture(ArmorItem armorItem) {
         //? if >=1.21 {
-        String materialName = armorItem.getMaterial().unwrapKey().map(key -> key.location().getPath()).orElse("");
+        String materialName = armorItem.getMaterial().unwrapKey().map(key -> key.location().toString()).orElse("");
         //?} else {
         /*String materialName = armorItem.getMaterial().getName();
         *///?}
