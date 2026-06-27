@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import java.util.Arrays;
 
@@ -21,10 +22,18 @@ import java.util.Arrays;
 public class InGameHudArmorMixin {
 
     @Unique
-    private static final ResourceLocation VANILLA_GUI_ICONS = new ResourceLocation("textures/gui/icons.png");
+    //? if >=1.21 {
+    private static final ResourceLocation VANILLA_GUI_ICONS = ResourceLocation.parse("textures/gui/icons.png");
+    //?} else {
+    /*private static final ResourceLocation VANILLA_GUI_ICONS = new ResourceLocation("textures/gui/icons.png");
+    *///?}
 
-    @Redirect(method = "renderPlayerHealth", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"))
-    private int colorfulArmorBar$skipVanillaArmor(Player instance) {
+    //? if >=1.21 {
+    @Redirect(method = "renderArmor", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"))
+    //?} else {
+    /*@Redirect(method = "renderPlayerHealth", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"))
+    *///?}
+    private static int colorfulArmorBar$skipVanillaArmor(Player instance) {
         return 0;
     }
 

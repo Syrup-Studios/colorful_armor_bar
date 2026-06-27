@@ -11,11 +11,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener {
-    public static final ResourceLocation FALLBACK_TEXTURE = new ResourceLocation("minecraft", "textures/armoricon/iron.png");
+    //? if >=1.21 {
+    public static final ResourceLocation FALLBACK_TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/armoricon/iron.png");
+    //?} else {
+    /*public static final ResourceLocation FALLBACK_TEXTURE = new ResourceLocation("minecraft", "textures/armoricon/iron.png");
+    *///?}
     private static final Map<String, ResourceLocation> TEXTURE_CACHE = new HashMap<>();
 
     public static ResourceLocation getTexture(ArmorItem armorItem) {
-        String materialName = armorItem.getMaterial().getName();
+        //? if >=1.21 {
+        String materialName = armorItem.getMaterial().unwrapKey().map(key -> key.location().getPath()).orElse("");
+        //?} else {
+        /*String materialName = armorItem.getMaterial().getName();
+        *///?}
 
         if (TEXTURE_CACHE.containsKey(materialName)) {
             return TEXTURE_CACHE.get(materialName);
@@ -32,7 +40,11 @@ public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener
             namespace = BuiltInRegistries.ITEM.getKey(armorItem).getNamespace();
         }
 
-        ResourceLocation targetTexture = new ResourceLocation(namespace, "textures/armoricon/" + pathName + ".png");
+        //? if >=1.21 {
+        ResourceLocation targetTexture = ResourceLocation.fromNamespaceAndPath(namespace, "textures/armoricon/" + pathName + ".png");
+        //?} else {
+        /*ResourceLocation targetTexture = new ResourceLocation(namespace, "textures/armoricon/" + pathName + ".png");
+        *///?}
 
         if (Minecraft.getInstance().getResourceManager().getResource(targetTexture).isPresent()) {
             TEXTURE_CACHE.put(materialName, targetTexture);
@@ -45,7 +57,11 @@ public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener
 
     @Override
     public ResourceLocation getFabricId() {
-        return new ResourceLocation("colorful_armor_bar", "armor_bar_reload_listener");
+        //? if >=1.21 {
+        return ResourceLocation.fromNamespaceAndPath("colorful_armor_bar", "armor_bar_reload_listener");
+        //?} else {
+        /*return new ResourceLocation("colorful_armor_bar", "armor_bar_reload_listener");
+        *///?}
     }
 
     @Override

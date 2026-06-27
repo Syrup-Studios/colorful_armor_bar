@@ -8,7 +8,8 @@ val minecraftVersion = property("deps.minecraft") as String
 version = "${property("mod.version")}+$minecraftVersion"
 base.archivesName = property("mod.id") as String
 
-val requiredJava = JavaVersion.VERSION_17
+val targetJavaVersion = if (stonecutter.eval(stonecutter.current.version, ">=1.20.5")) 21 else 17
+val requiredJava = JavaVersion.toVersion(targetJavaVersion)
 
 repositories {
     fun strictMaven(url: String, alias: String, vararg groups: String) = exclusiveContent {
@@ -47,7 +48,7 @@ java {
 
     toolchain {
         vendor = JvmVendorSpec.ADOPTIUM
-        languageVersion = JavaLanguageVersion.of(requiredJava.majorVersion)
+        languageVersion = JavaLanguageVersion.of(targetJavaVersion)
     }
 }
 
@@ -57,14 +58,14 @@ tasks {
             "id" to project.property("mod.id") as String,
             "name" to project.property("mod.name") as String,
             "version" to project.property("mod.version") as String,
-            "minecraft" to project.property("mod.mc_compat") as String,
+            "mc" to project.property("deps.minecraft")
         )
 
         inputs.properties(props)
 
         filesMatching("fabric.mod.json") { expand(props) }
 
-        val mixinJava = "JAVA_${requiredJava.majorVersion}"
+        val mixinJava = "JAVA_$targetJavaVersion"
         filesMatching("*.mixins.json") { expand("java" to mixinJava) }
     }
 
@@ -76,4 +77,9 @@ tasks {
         into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))
         dependsOn("build")
     }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "UTF-8"
+    options.release.set(targetJavaVersion)
 }
