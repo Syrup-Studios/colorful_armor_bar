@@ -15,15 +15,27 @@ public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener
     public static final ResourceLocation FALLBACK_TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/armoricon/iron.png");
     //?} else {
     /*public static final ResourceLocation FALLBACK_TEXTURE = new ResourceLocation("minecraft", "textures/armoricon/iron.png");
-    *///?}
+     *///?}
     private static final Map<String, ResourceLocation> TEXTURE_CACHE = new HashMap<>();
 
     public static ResourceLocation getTexture(ArmorItem armorItem) {
         //? if >=1.21 {
+        // Use toString() instead of getPath() to keep the full "modid:material" identifier
         String materialName = armorItem.getMaterial().unwrapKey().map(key -> key.location().toString()).orElse("");
+
+        // Fail-safe for inline/unregistered material holders: extract from the item name directly
+        if (materialName.isEmpty()) {
+            ResourceLocation itemKey = BuiltInRegistries.ITEM.getKey(armorItem);
+            String cleanedPath = itemKey.getPath()
+                    .replace("_helmet", "")
+                    .replace("_chestplate", "")
+                    .replace("_leggings", "")
+                    .replace("_boots", "");
+            materialName = itemKey.getNamespace() + ":" + cleanedPath;
+        }
         //?} else {
         /*String materialName = armorItem.getMaterial().getName();
-        *///?}
+         *///?}
 
         if (TEXTURE_CACHE.containsKey(materialName)) {
             return TEXTURE_CACHE.get(materialName);
@@ -44,7 +56,7 @@ public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener
         ResourceLocation targetTexture = ResourceLocation.fromNamespaceAndPath(namespace, "textures/armoricon/" + pathName + ".png");
         //?} else {
         /*ResourceLocation targetTexture = new ResourceLocation(namespace, "textures/armoricon/" + pathName + ".png");
-        *///?}
+         *///?}
 
         if (Minecraft.getInstance().getResourceManager().getResource(targetTexture).isPresent()) {
             TEXTURE_CACHE.put(materialName, targetTexture);
@@ -61,7 +73,7 @@ public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener
         return ResourceLocation.fromNamespaceAndPath("colorful_armor_bar", "armor_bar_reload_listener");
         //?} else {
         /*return new ResourceLocation("colorful_armor_bar", "armor_bar_reload_listener");
-        *///?}
+         *///?}
     }
 
     @Override
