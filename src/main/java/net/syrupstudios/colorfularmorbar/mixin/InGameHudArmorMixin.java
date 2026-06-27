@@ -23,19 +23,22 @@ public class InGameHudArmorMixin {
 
     @Unique
     //? if >=1.21 {
-    private static final ResourceLocation VANILLA_GUI_ICONS = ResourceLocation.parse("textures/gui/icons.png");
+    private static final ResourceLocation ARMOR_EMPTY_SPRITE = ResourceLocation.parse("hud/armor_empty");
     //?} else {
     /*private static final ResourceLocation VANILLA_GUI_ICONS = new ResourceLocation("textures/gui/icons.png");
-    *///?}
+     *///?}
 
     //? if >=1.21 {
     @Redirect(method = "renderArmor", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"))
-    //?} else {
-    /*@Redirect(method = "renderPlayerHealth", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"))
-    *///?}
     private static int colorfulArmorBar$skipVanillaArmor(Player instance) {
         return 0;
     }
+    //?} else {
+    /*@Redirect(method = "renderPlayerHealth", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"))
+    private int colorfulArmorBar$skipVanillaArmor(Player instance) {
+        return 0;
+    }
+    *///?}
 
     @Inject(method = "renderPlayerHealth", at = @At("HEAD"))
     private void colorfulArmorBar$customRenderArmor(GuiGraphics guiGraphics, CallbackInfo ci) {
@@ -75,10 +78,18 @@ public class InGameHudArmorMixin {
             }
         }
 
+        // 1.21.1 had a black bar behind the armor bar and this fixes it
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
         for (int j = 0; j < 10; ++j) {
             int x = left + j * 8;
 
-            guiGraphics.blit(VANILLA_GUI_ICONS, x, armorTop, 16, 9, 9, 9);
+            //? if >=1.21 {
+            guiGraphics.blitSprite(ARMOR_EMPTY_SPRITE, x, armorTop, 9, 9);
+            //?} else {
+            /*guiGraphics.blit(VANILLA_GUI_ICONS, x, armorTop, 16, 9, 9, 9);
+            *///?}
 
             ResourceLocation leftTex = points[j * 2];
             ResourceLocation rightTex = points[j * 2 + 1];
