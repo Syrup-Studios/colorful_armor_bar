@@ -55,10 +55,20 @@ java {
 tasks {
     processResources {
         val props = mapOf(
-            "id" to project.property("mod.id") as String,
-            "name" to project.property("mod.name") as String,
-            "version" to project.property("mod.version") as String,
-            "mc" to project.property("deps.minecraft")
+            "version" to project.version,
+            "mc" to project.property("deps.minecraft"),
+
+            "modName" to project.property("mod.name"),
+            "modId" to project.property("mod.id"),
+            "modDescription" to project.property("mod.description"),
+            "authors" to project.property("mod.authors"),
+            "license" to project.property("mod.license"),
+            "homepage" to project.property("mod.homepage"),
+            "issues" to project.property("mod.issues"),
+            "sources" to project.property("mod.sources"),
+
+            "fl" to project.property("deps.fabric_loader"),
+            "fapi" to project.property("deps.fabric_api"),
         )
 
         inputs.properties(props)

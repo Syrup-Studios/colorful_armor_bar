@@ -1,13 +1,19 @@
 {
 	"schemaVersion": 1,
-	"id": "colorful_armor_bar",
+	"id": "${modId}",
 	"version": "${version}",
-	"name": "Colorful Armor Bar",
-	"description": "A mod to add colors to the armor bar using texture packs!",
-	"authors": [],
-	"contact": {},
-	"license": "RSL-1.0",
-	"icon": "assets/colorful_armor_bar/icon.png",
+	"name": "${modName}",
+	"description": "${modDescription}",
+	"authors": [
+		"${authors}"
+	],
+	"contact": {
+		"homepage": "${homepage}",
+		"issues": "${issues}",
+		"sources": "${sources}"
+	},
+	"license": "${license}",
+	"icon": "assets/${modId}/icon.png",
 	"environment": "client",
 	"entrypoints": {
 		"client": [
@@ -15,11 +21,11 @@
 		]
 	},
 	"mixins": [
-		"colorful_armor_bar.mixins.json"
+		"${modId}.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.19.2",
-		"minecraft": "${mc}",
-		"fabric-api": "*"
+		"fabricloader": ">=${fl}",
+		"minecraft": ">=${mc}",
+		"fabric-api": ">=${fapi}"
 	}
 }
