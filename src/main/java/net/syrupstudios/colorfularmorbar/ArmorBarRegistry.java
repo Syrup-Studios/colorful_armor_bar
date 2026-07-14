@@ -1,7 +1,5 @@
 package net.syrupstudios.colorfularmorbar;
 
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -10,7 +8,8 @@ import net.minecraft.world.item.ArmorItem;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener {
+/** Loader-neutral texture lookup and cache. Loader entrypoints own reload registration. */
+public final class ArmorBarRegistry {
     //? if >=1.21 {
     public static final ResourceLocation FALLBACK_TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/armoricon/iron.png");
     //?} else {
@@ -18,7 +17,10 @@ public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener
      *///?}
     private static final Map<String, ResourceLocation> TEXTURE_CACHE = new HashMap<>();
 
-    public static ResourceLocation getTexture(ArmorItem armorItem) {
+    private ArmorBarRegistry() {
+    }
+
+    public static ResourceLocation getTexture(ArmorItem armorItem, ResourceManager resourceManager) {
         //? if >=1.21 {
         // Use toString() instead of getPath() to keep the full "modid:material" identifier
         String materialName = armorItem.getMaterial().unwrapKey().map(key -> key.location().toString()).orElse("");
@@ -26,11 +28,7 @@ public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener
         // Fail-safe for inline/unregistered material holders: extract from the item name directly
         if (materialName.isEmpty()) {
             ResourceLocation itemKey = BuiltInRegistries.ITEM.getKey(armorItem);
-            String cleanedPath = itemKey.getPath()
-                    .replace("_helmet", "")
-                    .replace("_chestplate", "")
-                    .replace("_leggings", "")
-                    .replace("_boots", "");
+            String cleanedPath = stripEquipmentSuffix(itemKey.getPath());
             materialName = itemKey.getNamespace() + ":" + cleanedPath;
         }
         //?} else {
@@ -58,7 +56,7 @@ public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener
         /*ResourceLocation targetTexture = new ResourceLocation(namespace, "textures/armoricon/" + pathName + ".png");
          *///?}
 
-        if (Minecraft.getInstance().getResourceManager().getResource(targetTexture).isPresent()) {
+        if (resourceManager.getResource(targetTexture).isPresent()) {
             TEXTURE_CACHE.put(materialName, targetTexture);
             return targetTexture;
         }
@@ -67,17 +65,17 @@ public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener
         return FALLBACK_TEXTURE;
     }
 
-    @Override
-    public ResourceLocation getFabricId() {
-        //? if >=1.21 {
-        return ResourceLocation.fromNamespaceAndPath("colorful_armor_bar", "armor_bar_reload_listener");
-        //?} else {
-        /*return new ResourceLocation("colorful_armor_bar", "armor_bar_reload_listener");
-         *///?}
+    private static String stripEquipmentSuffix(String path) {
+        for (String suffix : new String[]{"_helmet", "_chestplate", "_leggings", "_boots"}) {
+            if (path.endsWith(suffix)) {
+                return path.substring(0, path.length() - suffix.length());
+            }
+        }
+        return path;
     }
 
-    @Override
-    public void onResourceManagerReload(ResourceManager resourceManager) {
+    public static void clearCache() {
         TEXTURE_CACHE.clear();
     }
+
 }

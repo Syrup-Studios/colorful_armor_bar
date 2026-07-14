@@ -9,6 +9,8 @@ import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.syrupstudios.colorfularmorbar.ArmorBarRegistry;
 import org.spongepowered.asm.mixin.Mixin;
+//? if neoforge
+/*import org.spongepowered.asm.mixin.Shadow;*/
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -40,8 +42,37 @@ public class InGameHudArmorMixin {
     }
     *///?}
 
+    // NeoForge splits the HUD into independent layers and tracks their vertical
+    // position with leftHeight. Hook its armor layer after health has advanced it.
+    //? if neoforge {
+    /*@Shadow
+    private int leftHeight;
+
+    @Inject(method = "renderArmorLevel", at = @At("HEAD"))
+    private void colorfulArmorBar$renderNeoForgeArmor(GuiGraphics guiGraphics, CallbackInfo ci) {
+        colorfulArmorBar$renderArmor(guiGraphics, guiGraphics.guiHeight() - leftHeight);
+    }
+    *///?} else {
     @Inject(method = "renderPlayerHealth", at = @At("HEAD"))
-    private void colorfulArmorBar$customRenderArmor(GuiGraphics guiGraphics, CallbackInfo ci) {
+    private void colorfulArmorBar$renderVanillaArmor(GuiGraphics guiGraphics, CallbackInfo ci) {
+        Minecraft minecraft = Minecraft.getInstance();
+        Player player = minecraft.player;
+        if (player == null || player.getArmorValue() <= 0) {
+            return;
+        }
+
+        int top = guiGraphics.guiHeight() - 39;
+        int maxHealth = (int) Math.ceil(player.getMaxHealth());
+        int absorption = (int) Math.ceil(player.getAbsorptionAmount());
+        int healthRows = (int) Math.ceil((maxHealth + absorption) / 20.0);
+        int rowSpacing = Math.max(10 - (healthRows - 2), 3);
+        int armorTop = top - (healthRows - 1) * rowSpacing - 10;
+        colorfulArmorBar$renderArmor(guiGraphics, armorTop);
+    }
+    //?}
+
+    @Unique
+    private static void colorfulArmorBar$renderArmor(GuiGraphics guiGraphics, int armorTop) {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
         if (player == null) {
@@ -54,12 +85,6 @@ public class InGameHudArmorMixin {
         }
 
         int left = guiGraphics.guiWidth() / 2 - 91;
-        int top = guiGraphics.guiHeight() - 39;
-
-        int maxHealth = (int) Math.ceil(player.getMaxHealth());
-        int absorption = (int) Math.ceil(player.getAbsorptionAmount());
-        int healthRows = (int) Math.ceil((maxHealth + absorption) / 20.0);
-        int armorTop = top - (healthRows - 1) * 10 - 10;
 
         ResourceLocation[] points = new ResourceLocation[20];
         Arrays.fill(points, null);
@@ -70,12 +95,18 @@ public class InGameHudArmorMixin {
                 continue;
             }
 
-            ResourceLocation texture = ArmorBarRegistry.getTexture(armorItem);
+            ResourceLocation texture = ArmorBarRegistry.getTexture(armorItem, minecraft.getResourceManager());
             int protection = armorItem.getDefense();
 
-            for (int p = 0; p < protection && pointIndex < 20; p++) {
+            for (int p = 0; p < protection && pointIndex < Math.min(armorValue, points.length); p++) {
                 points[pointIndex++] = texture;
             }
+        }
+
+        // Preserve the real armor total when another mod or an item-stack attribute
+        // contributes points that cannot be assigned to a particular armor material.
+        while (pointIndex < Math.min(armorValue, points.length)) {
+            points[pointIndex++] = ArmorBarRegistry.FALLBACK_TEXTURE;
         }
 
         // 1.21.1 had a black bar behind the armor bar and this fixes it
@@ -94,7 +125,7 @@ public class InGameHudArmorMixin {
             ResourceLocation leftTex = points[j * 2];
             ResourceLocation rightTex = points[j * 2 + 1];
 
-            if (leftTex == rightTex && leftTex != null) {
+            if (leftTex != null && leftTex.equals(rightTex)) {
                 guiGraphics.blit(leftTex, x, armorTop, 0, 0, 9, 9, 18, 9);
             } else if (leftTex != null && rightTex == null) {
                 guiGraphics.blit(leftTex, x, armorTop, 9, 0, 9, 9, 18, 9);

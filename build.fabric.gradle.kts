@@ -5,8 +5,8 @@ plugins {
 
 val minecraftVersion = property("deps.minecraft") as String
 
-version = "${property("mod.version")}+$minecraftVersion"
-base.archivesName = property("mod.id") as String
+version = property("mod.version") as String
+base.archivesName = "${property("mod.id")}-fabric-$minecraftVersion"
 
 val targetJavaVersion = if (stonecutter.eval(stonecutter.current.version, ">=1.20.5")) 21 else 17
 val requiredJava = JavaVersion.toVersion(targetJavaVersion)
@@ -37,7 +37,7 @@ loom {
 
     runConfigs.all {
         vmArgs("-Dmixin.debug.export=true") // Exports transformed classes for debugging
-        runDir = "../../run" // Shares the run directory between versions
+        runDir = "run"
     }
 }
 
@@ -57,6 +57,7 @@ tasks {
         val props = mapOf(
             "version" to project.version,
             "mc" to project.property("deps.minecraft"),
+            "packFormat" to project.property("deps.resource_pack_format"),
 
             "modName" to project.property("mod.name"),
             "modId" to project.property("mod.id"),
@@ -74,9 +75,13 @@ tasks {
         inputs.properties(props)
 
         filesMatching("fabric.mod.json") { expand(props) }
+        filesMatching("pack.mcmeta") { expand(props) }
+        exclude("META-INF/mods.toml", "META-INF/neoforge.mods.toml")
 
         val mixinJava = "JAVA_$targetJavaVersion"
-        filesMatching("*.mixins.json") { expand("java" to mixinJava) }
+        filesMatching("*.mixins.json") {
+            expand("java" to mixinJava, "refmapLine" to "")
+        }
     }
 
     // Builds the version into a shared folder in `build/libs/${mod version}/`
