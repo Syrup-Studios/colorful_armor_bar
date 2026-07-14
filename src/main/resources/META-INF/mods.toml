@@ -10,9 +10,6 @@ authors="${authors}"
 description='''${modDescription}'''
 displayTest="IGNORE_SERVER_VERSION"
 
-[[mixins]]
-config="${modId}.mixins.json"
-
 [[dependencies.${modId}]]
 modId="forge"
 mandatory=true

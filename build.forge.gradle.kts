@@ -1,6 +1,5 @@
 plugins {
     id("net.minecraftforge.gradle") version "6.0.46"
-    id("org.spongepowered.mixin") version "0.7.38"
     id("maven-publish")
 }
 
@@ -27,10 +26,11 @@ repositories { mavenCentral() }
 
 dependencies {
     minecraft("net.minecraftforge:forge:$minecraftVersion-$forgeVersion")
-    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
 }
 
-mixin { add(sourceSets.main.get(), "${property("mod.id")}.refmap.json") }
+sourceSets.main {
+    java.exclude("net/syrupstudios/colorfularmorbar/mixin/**")
+}
 
 java {
     withSourcesJar()
@@ -59,16 +59,8 @@ tasks.processResources {
     inputs.properties(props)
     filesMatching("META-INF/mods.toml") { expand(props) }
     filesMatching("pack.mcmeta") { expand(props) }
-    filesMatching("*.mixins.json") {
-        expand(
-            "java" to "JAVA_17",
-            "refmapLine" to "\"refmap\": \"${project.property("mod.id")}.refmap.json\","
-        )
-    }
-    exclude("fabric.mod.json", "META-INF/neoforge.mods.toml")
+    exclude("fabric.mod.json", "META-INF/neoforge.mods.toml", "*.mixins.json")
 }
-
-tasks.jar { manifest.attributes["MixinConfigs"] = "${project.property("mod.id")}.mixins.json" }
 
 tasks.register<Copy>("buildAndCollect") {
     group = "build"
