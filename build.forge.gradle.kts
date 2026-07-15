@@ -1,31 +1,30 @@
 plugins {
-    id("net.minecraftforge.gradle") version "6.0.46"
+    id("net.neoforged.moddev.legacyforge") version "2.0.137"
     id("maven-publish")
 }
 
-val minecraftVersion = property("deps.minecraft") as String
+val mcVersion = property("deps.minecraft") as String
 val forgeVersion = property("deps.forge_version") as String
 val targetJavaVersion = 17
 
 version = property("mod.version") as String
 group = property("mod.group") as String
-base.archivesName = "${property("mod.id")}-forge-$minecraftVersion"
+base.archivesName = "${property("mod.id")}-forge-$mcVersion"
 
-minecraft {
-    mappings("official", minecraftVersion)
+legacyForge {
+    setVersion("$mcVersion-$forgeVersion")
     runs {
         create("client") {
-            workingDirectory(project.file("run"))
-            property("forge.logging.console.level", "info")
-            mods.create(property("mod.id") as String) { source(sourceSets.main.get()) }
+            client()
+            gameDirectory = project.file("run")
         }
     }
+    mods.create(property("mod.id") as String) { sourceSet(sourceSets.main.get()) }
 }
 
-repositories { mavenCentral() }
-
 dependencies {
-    minecraft("net.minecraftforge:forge:$minecraftVersion-$forgeVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 sourceSets.main {
@@ -44,10 +43,12 @@ tasks.withType<JavaCompile>().configureEach {
     options.release.set(targetJavaVersion)
 }
 
+tasks.withType<Test>().configureEach { useJUnitPlatform() }
+
 tasks.processResources {
     val props = mapOf(
         "version" to project.version,
-        "mc" to minecraftVersion,
+        "mc" to mcVersion,
         "packFormat" to project.property("deps.resource_pack_format"),
         "forge" to forgeVersion,
         "modName" to project.property("mod.name"),

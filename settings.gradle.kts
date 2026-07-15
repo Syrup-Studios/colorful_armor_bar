@@ -21,11 +21,18 @@ rootProject.name = "colorful_armor_bar"
 
 stonecutter {
     create(rootProject) {
-        fun match(version: String, vararg loaders: String) = loaders
-            .forEach { loader -> version("$version-$loader", version).buildscript = "build.$loader.gradle.kts" }
+        fun target(version: String, loader: String, buildscript: String = loader) {
+            version("$version-$loader", version).buildscript = "build.$buildscript.gradle.kts"
+        }
 
-        match("1.20.1", "fabric", "forge")
-        match("1.21.1", "fabric", "neoforge")
+        target("1.20.1", "fabric")
+        target("1.20.1", "forge")
+        target("1.21.1", "fabric")
+        target("1.21.1", "neoforge")
+        target("1.21.11", "fabric")
+        target("1.21.11", "neoforge")
+        target("26.2", "fabric")
+        target("26.2", "neoforge")
 
         vcsVersion = "1.20.1-fabric"
     }

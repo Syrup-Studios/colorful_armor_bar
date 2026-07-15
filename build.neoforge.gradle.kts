@@ -5,7 +5,8 @@ plugins {
 
 val minecraftVersion = property("deps.minecraft") as String
 val neoForgeVersion = property("deps.neoforge_version") as String
-val targetJavaVersion = 21
+val modernHud = stonecutter.eval(stonecutter.current.version, ">=1.21.11")
+val targetJavaVersion = if (stonecutter.eval(stonecutter.current.version, ">=26")) 25 else 21
 
 version = property("mod.version") as String
 group = property("mod.group") as String
@@ -17,6 +18,15 @@ neoForge {
         create("client") { client(); gameDirectory = project.file("run") }
     }
     mods.create(property("mod.id") as String) { sourceSet(sourceSets.main.get()) }
+}
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+if (modernHud) {
+    sourceSets.main { java.exclude("net/syrupstudios/colorfularmorbar/mixin/**") }
 }
 
 java {
@@ -31,6 +41,8 @@ tasks.withType<JavaCompile>().configureEach {
     options.release.set(targetJavaVersion)
 }
 
+tasks.withType<Test>().configureEach { useJUnitPlatform() }
+
 tasks.processResources {
     val props = mapOf(
         "version" to project.version,
@@ -41,13 +53,18 @@ tasks.processResources {
         "modId" to project.property("mod.id"),
         "modDescription" to project.property("mod.description"),
         "authors" to project.property("mod.authors"),
-        "license" to project.property("mod.license")
+        "license" to project.property("mod.license"),
+        "mixinConfig" to if (modernHud) "" else "[[mixins]]\nconfig=\"${project.property("mod.id")}.mixins.json\""
     )
     inputs.properties(props)
     filesMatching("META-INF/neoforge.mods.toml") { expand(props) }
     filesMatching("pack.mcmeta") { expand(props) }
-    filesMatching("*.mixins.json") {
-        expand("java" to "JAVA_21", "refmapLine" to "")
+    if (modernHud) {
+        exclude("*.mixins.json")
+    } else {
+        filesMatching("*.mixins.json") {
+            expand("java" to "JAVA_21", "refmapLine" to "")
+        }
     }
     exclude("fabric.mod.json", "META-INF/mods.toml")
 }

@@ -10,8 +10,7 @@ authors="${authors}"
 description='''${modDescription}'''
 displayTest="IGNORE_SERVER_VERSION"
 
-[[mixins]]
-config="${modId}.mixins.json"
+${mixinConfig}
 
 [[dependencies.${modId}]]
 modId="neoforge"
