@@ -34,6 +34,8 @@ The Stonecutter workspace currently produces these client artifacts:
 
 * Minecraft 1.20.1: Fabric and Forge
 * Minecraft 1.21.1: Fabric and NeoForge
+* Minecraft 1.21.11: Fabric and NeoForge
+* Minecraft 26.2: Fabric and NeoForge
 
 Run `./gradlew build` to compile the active Stonecutter target, or address a
 specific target directly, for example `./gradlew :1.21.1-neoforge:build`.
