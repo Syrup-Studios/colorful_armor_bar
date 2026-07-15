@@ -10,8 +10,5 @@ stonecutter {
     parameters {
         val loader = node.metadata.project.substringAfterLast('-')
         constants.match(loader, "fabric", "forge", "neoforge")
-        val modernHud = eval(current.version, ">=1.21.11")
-        constants["modernneo"] = loader == "neoforge" && modernHud
-        constants["legacyevent"] = loader == "forge" || (loader == "neoforge" && !modernHud)
     }
 }
