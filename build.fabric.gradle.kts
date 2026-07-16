@@ -33,8 +33,6 @@ dependencies {
     val modConfiguration = if (remappedMinecraft) "modImplementation" else "implementation"
     add(modConfiguration, "net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
     add(modConfiguration, "net.fabricmc.fabric-api:fabric-api:${property("deps.fabric_api")}")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 loomExtension.apply {
@@ -127,5 +125,3 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release.set(targetJavaVersion)
 }
-
-tasks.withType<Test>().configureEach { useJUnitPlatform() }

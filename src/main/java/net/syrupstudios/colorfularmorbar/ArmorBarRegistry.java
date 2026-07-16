@@ -79,11 +79,6 @@ public final class ArmorBarRegistry {
         /*String materialName = armorItem.getMaterial().getName();
         *///?}
 
-        ResourceLocation cached = TEXTURE_CACHE.get(materialName);
-        if (cached != null) {
-            return cached;
-        }
-
         String namespace = BuiltInRegistries.ITEM.getKey(armorItem).getNamespace();
         String pathName = materialName;
         if (materialName.contains(":")) {
@@ -92,13 +87,20 @@ public final class ArmorBarRegistry {
             pathName = parts[1];
         }
 
+        // Key on the resolved namespace so equal material names from different mods don't collide.
+        String cacheKey = namespace + ":" + pathName;
+        ResourceLocation cached = TEXTURE_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
         //? if >=1.21 {
         ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(namespace, "textures/armoricon/" + pathName + ".png");
         //?} else {
         /*ResourceLocation texture = new ResourceLocation(namespace, "textures/armoricon/" + pathName + ".png");
         *///?}
         ResourceLocation resolved = resourceManager.getResource(texture).isPresent() ? texture : FALLBACK_TEXTURE;
-        TEXTURE_CACHE.put(materialName, resolved);
+        TEXTURE_CACHE.put(cacheKey, resolved);
         return resolved;
     }
     //?}
