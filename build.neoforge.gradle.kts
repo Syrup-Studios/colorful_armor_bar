@@ -5,12 +5,17 @@ plugins {
 
 val minecraftVersion = property("deps.minecraft") as String
 val neoForgeVersion = property("deps.neoforge_version") as String
+val modVersion = property("mod.version") as String
 val modernHud = stonecutter.eval(stonecutter.current.version, ">=1.21.11")
 val targetJavaVersion = if (stonecutter.eval(stonecutter.current.version, ">=26")) 25 else 21
 
-version = property("mod.version") as String
+version = modVersion
 group = property("mod.group") as String
-base.archivesName = "${property("mod.id")}-neoforge-$minecraftVersion"
+base.archivesName = property("mod.id") as String
+
+tasks.withType<AbstractArchiveTask>().configureEach {
+    archiveVersion.set("$modVersion+$minecraftVersion-neoforge")
+}
 
 neoForge {
     version = neoForgeVersion

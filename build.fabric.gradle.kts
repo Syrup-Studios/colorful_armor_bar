@@ -11,6 +11,7 @@ plugins {
 val remappedMinecraft = stonecutter.eval(stonecutter.current.version, "<26")
 val modernHud = stonecutter.eval(stonecutter.current.version, ">=1.21.11")
 val minecraftVersion = property("deps.minecraft") as String
+val modVersion = property("mod.version") as String
 val targetJavaVersion = when {
     stonecutter.eval(stonecutter.current.version, ">=26") -> 25
     stonecutter.eval(stonecutter.current.version, ">=1.20.5") -> 21
@@ -20,9 +21,13 @@ val requiredJava = JavaVersion.toVersion(targetJavaVersion)
 
 apply(plugin = if (remappedMinecraft) "net.fabricmc.fabric-loom-remap" else "net.fabricmc.fabric-loom")
 
-version = property("mod.version") as String
+version = modVersion
 group = property("mod.group") as String
-base.archivesName = "${property("mod.id")}-fabric-$minecraftVersion"
+base.archivesName = property("mod.id") as String
+
+tasks.withType<AbstractArchiveTask>().configureEach {
+    archiveVersion.set("$modVersion+$minecraftVersion-fabric")
+}
 
 val loomExtension = extensions.getByType<LoomGradleExtensionAPI>()
 
