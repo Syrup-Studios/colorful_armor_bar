@@ -1,83 +1,120 @@
 package net.syrupstudios.colorfularmorbar;
 
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
+//? if >=1.21.11 {
+/*import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.equipment.Equippable;
+*///?} else {
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.ArmorItem;
+//?}
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class ArmorBarRegistry implements SimpleSynchronousResourceReloadListener {
-    //? if >=1.21 {
+/** Version-neutral texture lookup and cache. Loader entrypoints own reload registration. */
+public final class ArmorBarRegistry {
+    //? if >=1.21.11 {
+    /*public static final Identifier FALLBACK_TEXTURE = Identifier.fromNamespaceAndPath("minecraft", "textures/armoricon/iron.png");
+    private static final Map<String, Identifier> TEXTURE_CACHE = new HashMap<>();
+    *///?} elif >=1.21 {
     public static final ResourceLocation FALLBACK_TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/armoricon/iron.png");
+    private static final Map<String, ResourceLocation> TEXTURE_CACHE = new HashMap<>();
     //?} else {
     /*public static final ResourceLocation FALLBACK_TEXTURE = new ResourceLocation("minecraft", "textures/armoricon/iron.png");
-     *///?}
     private static final Map<String, ResourceLocation> TEXTURE_CACHE = new HashMap<>();
+    *///?}
 
-    public static ResourceLocation getTexture(ArmorItem armorItem) {
+    private ArmorBarRegistry() {
+    }
+
+    //? if >=1.21.11 {
+    /*public static Identifier getTexture(ItemStack stack, ResourceManager resourceManager) {
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
+        Identifier assetId = equippable == null
+                ? null
+                : equippable.assetId().map(key -> key.identifier()).orElse(null);
+        String cacheKey = assetId == null ? itemId.toString() : assetId.toString();
+
+        Identifier cached = TEXTURE_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
+        Identifier texture = assetId == null ? null : findTexture(assetId, resourceManager);
+        if (texture == null) {
+            Identifier strippedItemId = Identifier.fromNamespaceAndPath(itemId.getNamespace(), stripEquipmentSuffix(itemId.getPath()));
+            if (!strippedItemId.equals(assetId)) {
+                texture = findTexture(strippedItemId, resourceManager);
+            }
+        }
+
+        Identifier resolved = texture == null ? FALLBACK_TEXTURE : texture;
+        TEXTURE_CACHE.put(cacheKey, resolved);
+        return resolved;
+    }
+
+    private static Identifier findTexture(Identifier materialId, ResourceManager resourceManager) {
+        Identifier texture = Identifier.fromNamespaceAndPath(
+                materialId.getNamespace(), "textures/armoricon/" + materialId.getPath() + ".png");
+        return resourceManager.getResource(texture).isPresent() ? texture : null;
+    }
+    *///?} else {
+    public static ResourceLocation getTexture(ItemStack stack, ResourceManager resourceManager) {
+        if (!(stack.getItem() instanceof ArmorItem armorItem)) {
+            return FALLBACK_TEXTURE;
+        }
+
         //? if >=1.21 {
-        // Use toString() instead of getPath() to keep the full "modid:material" identifier
         String materialName = armorItem.getMaterial().unwrapKey().map(key -> key.location().toString()).orElse("");
-
-        // Fail-safe for inline/unregistered material holders: extract from the item name directly
         if (materialName.isEmpty()) {
             ResourceLocation itemKey = BuiltInRegistries.ITEM.getKey(armorItem);
-            String cleanedPath = itemKey.getPath()
-                    .replace("_helmet", "")
-                    .replace("_chestplate", "")
-                    .replace("_leggings", "")
-                    .replace("_boots", "");
-            materialName = itemKey.getNamespace() + ":" + cleanedPath;
+            materialName = itemKey.getNamespace() + ":" + stripEquipmentSuffix(itemKey.getPath());
         }
         //?} else {
         /*String materialName = armorItem.getMaterial().getName();
-         *///?}
+        *///?}
 
-        if (TEXTURE_CACHE.containsKey(materialName)) {
-            return TEXTURE_CACHE.get(materialName);
-        }
-
-        String namespace = "minecraft";
+        String namespace = BuiltInRegistries.ITEM.getKey(armorItem).getNamespace();
         String pathName = materialName;
-
         if (materialName.contains(":")) {
             String[] parts = materialName.split(":", 2);
             namespace = parts[0];
             pathName = parts[1];
-        } else {
-            namespace = BuiltInRegistries.ITEM.getKey(armorItem).getNamespace();
+        }
+
+        // Key on the resolved namespace so equal material names from different mods don't collide.
+        String cacheKey = namespace + ":" + pathName;
+        ResourceLocation cached = TEXTURE_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached;
         }
 
         //? if >=1.21 {
-        ResourceLocation targetTexture = ResourceLocation.fromNamespaceAndPath(namespace, "textures/armoricon/" + pathName + ".png");
+        ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(namespace, "textures/armoricon/" + pathName + ".png");
         //?} else {
-        /*ResourceLocation targetTexture = new ResourceLocation(namespace, "textures/armoricon/" + pathName + ".png");
-         *///?}
+        /*ResourceLocation texture = new ResourceLocation(namespace, "textures/armoricon/" + pathName + ".png");
+        *///?}
+        ResourceLocation resolved = resourceManager.getResource(texture).isPresent() ? texture : FALLBACK_TEXTURE;
+        TEXTURE_CACHE.put(cacheKey, resolved);
+        return resolved;
+    }
+    //?}
 
-        if (Minecraft.getInstance().getResourceManager().getResource(targetTexture).isPresent()) {
-            TEXTURE_CACHE.put(materialName, targetTexture);
-            return targetTexture;
+    static String stripEquipmentSuffix(String path) {
+        for (String suffix : new String[]{"_helmet", "_chestplate", "_leggings", "_boots"}) {
+            if (path.endsWith(suffix)) {
+                return path.substring(0, path.length() - suffix.length());
+            }
         }
-
-        TEXTURE_CACHE.put(materialName, FALLBACK_TEXTURE);
-        return FALLBACK_TEXTURE;
+        return path;
     }
 
-    @Override
-    public ResourceLocation getFabricId() {
-        //? if >=1.21 {
-        return ResourceLocation.fromNamespaceAndPath("colorful_armor_bar", "armor_bar_reload_listener");
-        //?} else {
-        /*return new ResourceLocation("colorful_armor_bar", "armor_bar_reload_listener");
-         *///?}
-    }
-
-    @Override
-    public void onResourceManagerReload(ResourceManager resourceManager) {
+    public static void clearCache() {
         TEXTURE_CACHE.clear();
     }
 }
