@@ -23,6 +23,11 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 @EventBusSubscriber(modid = ColorfulArmorBar.MOD_ID, value = Dist.CLIENT)
 public class NeoForgeEntrypoint {
 
+    public NeoForgeEntrypoint() {
+        ColorfulArmorBar.initialize();
+        ColorfulArmorBar.LOGGER.info("Colorful Armor Bar initialized (NeoForge client)");
+    }
+
     //? if >=1.21.11 {
     /^@SubscribeEvent
     public static void addReloadListeners(AddClientReloadListenersEvent event) {

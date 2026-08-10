@@ -13,6 +13,10 @@ version = modVersion
 group = property("mod.group") as String
 base.archivesName = property("mod.id") as String
 
+repositories {
+    maven("https://maven.syrupstudios.net/releases/")
+}
+
 tasks.withType<AbstractArchiveTask>().configureEach {
     archiveVersion.set("$modVersion+$minecraftVersion-neoforge")
 }
@@ -23,6 +27,10 @@ neoForge {
         create("client") { client(); gameDirectory = project.file("run") }
     }
     mods.create(property("mod.id") as String) { sourceSet(sourceSets.main.get()) }
+}
+
+dependencies {
+    implementation("net.syrupstudios:syrup_library:${property("deps.syrup_library")}+$minecraftVersion-neoforge")
 }
 
 if (modernHud) {
@@ -42,16 +50,22 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.processResources {
+    val packFormat = project.property("deps.resource_pack_format")
     val props = mapOf(
         "version" to project.version,
         "mc" to minecraftVersion,
-        "packFormat" to project.property("deps.resource_pack_format"),
+        "packVersions" to if (modernHud) {
+            "\"min_format\": [$packFormat, 0],\n    \"max_format\": $packFormat,"
+        } else {
+            "\"pack_format\": $packFormat,"
+        },
         "neoforge" to neoForgeVersion,
         "modName" to project.property("mod.name"),
         "modId" to project.property("mod.id"),
         "modDescription" to project.property("mod.description"),
         "authors" to project.property("mod.authors"),
         "license" to project.property("mod.license"),
+        "syrupLibrary" to project.property("deps.syrup_library"),
         "mixinConfig" to if (modernHud) "" else "[[mixins]]\nconfig=\"${project.property("mod.id")}.mixins.json\""
     )
     inputs.properties(props)

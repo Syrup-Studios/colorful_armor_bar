@@ -18,6 +18,7 @@ import net.syrupstudios.colorfularmorbar.ColorfulArmorBar;
 @Mod.EventBusSubscriber(modid = ColorfulArmorBar.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ForgeEntrypoint {
     public ForgeEntrypoint() {
+        ColorfulArmorBar.initialize();
         ColorfulArmorBar.LOGGER.info("Colorful Armor Bar initialized (Forge client)");
     }
 

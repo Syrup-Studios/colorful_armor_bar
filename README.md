@@ -12,6 +12,15 @@ Instead of hardcoding compatibility or waiting for backend code updates, everyth
 * **100% Client-Side:** Safe to use on any public server or multiplayer network. You don't need it installed on the server for it to work.
 * **Fully Customizable:** Don't like the default colors? You can easily change the icons or add support for modded armor using resource packs.
 
+## Configuration
+
+The client config is stored in `config/colorful_armor_bar.json5`.
+
+Set `group_matching_armor` to `true` to combine armor pieces that use the same
+icon into one continuous section. The group with the most armor points is shown
+first. Equal groups keep their worn-slot order. The default value is `false`,
+which keeps the armor bar in worn-slot order.
+
 ---
 
 ## For Resource Pack Creators & Mod Developers

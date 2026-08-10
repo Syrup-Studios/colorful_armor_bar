@@ -26,6 +26,7 @@
 	"depends": {
 		"fabricloader": ">=${fl}",
 		"minecraft": "${mc}",
-		"fabric-api": ">=${fapi}"
+		"fabric-api": ">=${fapi}",
+		"syrup_library": ">=${syrupLibrary}"
 	}
 }

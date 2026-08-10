@@ -12,6 +12,10 @@ version = modVersion
 group = property("mod.group") as String
 base.archivesName = property("mod.id") as String
 
+repositories {
+    maven("https://maven.syrupstudios.net/releases/")
+}
+
 tasks.withType<AbstractArchiveTask>().configureEach {
     archiveVersion.set("$modVersion+$mcVersion-forge")
 }
@@ -25,6 +29,10 @@ legacyForge {
         }
     }
     mods.create(property("mod.id") as String) { sourceSet(sourceSets.main.get()) }
+}
+
+dependencies {
+    implementation("net.syrupstudios:syrup_library:${property("deps.syrup_library")}+$mcVersion-forge")
 }
 
 sourceSets.main {
@@ -47,13 +55,14 @@ tasks.processResources {
     val props = mapOf(
         "version" to project.version,
         "mc" to mcVersion,
-        "packFormat" to project.property("deps.resource_pack_format"),
+        "packVersions" to "\"pack_format\": ${project.property("deps.resource_pack_format")},",
         "forge" to forgeVersion,
         "modName" to project.property("mod.name"),
         "modId" to project.property("mod.id"),
         "modDescription" to project.property("mod.description"),
         "authors" to project.property("mod.authors"),
-        "license" to project.property("mod.license")
+        "license" to project.property("mod.license"),
+        "syrupLibrary" to project.property("deps.syrup_library")
     )
     inputs.properties(props)
     filesMatching("META-INF/mods.toml") { expand(props) }

@@ -32,6 +32,7 @@ import net.syrupstudios.colorfularmorbar.ColorfulArmorBar;
 public class FabricEntrypoint implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        ColorfulArmorBar.initialize();
         ColorfulArmorBar.LOGGER.info("Colorful Armor Bar initialized (Fabric client)");
         //? if >=26 {
         /*Identifier reloadId = Identifier.fromNamespaceAndPath(ColorfulArmorBar.MOD_ID, "armor_bar_reload_listener");

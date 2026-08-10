@@ -23,3 +23,10 @@ mandatory=true
 versionRange="[${mc}]"
 ordering="NONE"
 side="CLIENT"
+
+[[dependencies.${modId}]]
+modId="syrup_library"
+mandatory=true
+versionRange="[${syrupLibrary},)"
+ordering="AFTER"
+side="CLIENT"

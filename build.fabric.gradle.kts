@@ -21,6 +21,10 @@ val requiredJava = JavaVersion.toVersion(targetJavaVersion)
 
 apply(plugin = if (remappedMinecraft) "net.fabricmc.fabric-loom-remap" else "net.fabricmc.fabric-loom")
 
+repositories {
+    maven("https://maven.syrupstudios.net/releases/")
+}
+
 version = modVersion
 group = property("mod.group") as String
 base.archivesName = property("mod.id") as String
@@ -38,6 +42,7 @@ dependencies {
     val modConfiguration = if (remappedMinecraft) "modImplementation" else "implementation"
     add(modConfiguration, "net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
     add(modConfiguration, "net.fabricmc.fabric-api:fabric-api:${property("deps.fabric_api")}")
+    add(modConfiguration, "net.syrupstudios:syrup_library:${property("deps.syrup_library")}+$minecraftVersion-fabric")
 }
 
 loomExtension.apply {
@@ -83,10 +88,15 @@ val generateFabricMetadata = tasks.register("generateFabricMetadata") {
 }
 
 tasks.processResources {
+    val packFormat = project.property("deps.resource_pack_format")
     val props = mapOf(
         "version" to project.version,
         "mc" to minecraftVersion,
-        "packFormat" to project.property("deps.resource_pack_format"),
+        "packVersions" to if (modernHud) {
+            "\"min_format\": [$packFormat, 0],\n    \"max_format\": $packFormat,"
+        } else {
+            "\"pack_format\": $packFormat,"
+        },
         "modName" to project.property("mod.name"),
         "modId" to project.property("mod.id"),
         "modDescription" to project.property("mod.description"),
@@ -96,7 +106,8 @@ tasks.processResources {
         "issues" to project.property("mod.issues"),
         "sources" to project.property("mod.sources"),
         "fl" to project.property("deps.fabric_loader"),
-        "fapi" to project.property("deps.fabric_api")
+        "fapi" to project.property("deps.fabric_api"),
+        "syrupLibrary" to project.property("deps.syrup_library")
     )
 
     dependsOn(generateFabricMetadata)

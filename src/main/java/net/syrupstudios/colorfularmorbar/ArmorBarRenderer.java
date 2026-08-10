@@ -86,10 +86,12 @@ public final class ArmorBarRenderer {
 
         //? if >=1.21.11 {
         /*List<Identifier> points = ArmorBarLayout.build(
-                player.getArmorValue(), contributions, ArmorBarRegistry.FALLBACK_TEXTURE);
+                player.getArmorValue(), contributions, ArmorBarRegistry.FALLBACK_TEXTURE,
+                ColorfulArmorBarConfig.GROUP_MATCHING_ARMOR.get());
         *///?} else {
         List<ResourceLocation> points = ArmorBarLayout.build(
-                player.getArmorValue(), contributions, ArmorBarRegistry.FALLBACK_TEXTURE);
+                player.getArmorValue(), contributions, ArmorBarRegistry.FALLBACK_TEXTURE,
+                ColorfulArmorBarConfig.GROUP_MATCHING_ARMOR.get());
         //?}
 
         int left = guiGraphics.guiWidth() / 2 - 91;
