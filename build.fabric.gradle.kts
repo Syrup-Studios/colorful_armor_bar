@@ -13,6 +13,8 @@ val remappedMinecraft = stonecutter.eval(stonecutter.current.version, "<26")
 val modernHud = stonecutter.eval(stonecutter.current.version, ">=1.21.11")
 val minecraftVersion = property("deps.minecraft") as String
 val modVersion = property("mod.version") as String
+val syrupLibraryVersion = "${property("deps.syrup_library")}+$minecraftVersion-fabric"
+val syrupLibraryCoordinate = "net.syrupstudios:syrup_library:$syrupLibraryVersion"
 val targetJavaVersion = when {
     stonecutter.eval(stonecutter.current.version, ">=26") -> 25
     stonecutter.eval(stonecutter.current.version, ">=1.20.5") -> 21
@@ -43,7 +45,8 @@ dependencies {
     val modConfiguration = if (remappedMinecraft) "modImplementation" else "implementation"
     add(modConfiguration, "net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
     add(modConfiguration, "net.fabricmc.fabric-api:fabric-api:${property("deps.fabric_api")}")
-    add(modConfiguration, "net.syrupstudios:syrup_library:${property("deps.syrup_library")}+$minecraftVersion-fabric")
+    add(modConfiguration, syrupLibraryCoordinate)
+    add("include", syrupLibraryCoordinate)
 }
 
 loomExtension.apply {

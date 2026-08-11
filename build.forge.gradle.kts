@@ -8,6 +8,8 @@ val mcVersion = property("deps.minecraft") as String
 val forgeVersion = property("deps.forge_version") as String
 val modVersion = property("mod.version") as String
 val targetJavaVersion = 17
+val syrupLibraryVersion = "${property("deps.syrup_library")}+$mcVersion-forge"
+val syrupLibraryCoordinate = "net.syrupstudios:syrup_library:$syrupLibraryVersion"
 
 version = modVersion
 group = property("mod.group") as String
@@ -33,7 +35,13 @@ legacyForge {
 }
 
 dependencies {
-    implementation("net.syrupstudios:syrup_library:${property("deps.syrup_library")}+$mcVersion-forge")
+    implementation(syrupLibraryCoordinate)
+    jarJar(syrupLibraryCoordinate) {
+        version {
+            strictly("[$syrupLibraryVersion]")
+            prefer(syrupLibraryVersion)
+        }
+    }
 }
 
 sourceSets.main {

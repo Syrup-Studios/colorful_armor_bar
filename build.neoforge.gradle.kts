@@ -9,6 +9,8 @@ val neoForgeVersion = property("deps.neoforge_version") as String
 val modVersion = property("mod.version") as String
 val modernHud = stonecutter.eval(stonecutter.current.version, ">=1.21.11")
 val targetJavaVersion = if (stonecutter.eval(stonecutter.current.version, ">=26")) 25 else 21
+val syrupLibraryVersion = "${property("deps.syrup_library")}+$minecraftVersion-neoforge"
+val syrupLibraryCoordinate = "net.syrupstudios:syrup_library:$syrupLibraryVersion"
 
 version = modVersion
 group = property("mod.group") as String
@@ -31,7 +33,13 @@ neoForge {
 }
 
 dependencies {
-    implementation("net.syrupstudios:syrup_library:${property("deps.syrup_library")}+$minecraftVersion-neoforge")
+    implementation(syrupLibraryCoordinate)
+    jarJar(syrupLibraryCoordinate) {
+        version {
+            strictly("[$syrupLibraryVersion]")
+            prefer(syrupLibraryVersion)
+        }
+    }
 }
 
 if (modernHud) {

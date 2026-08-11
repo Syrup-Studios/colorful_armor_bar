@@ -42,9 +42,6 @@ publishMods {
         accessToken = modrinthToken
         minecraftVersions.add(minecraftVersion)
         environment = CLIENT_ONLY
-        requires {
-            id.set("9tBNzmjo")
-        }
         if (loader == "fabric") requires("fabric-api")
     }
 }
