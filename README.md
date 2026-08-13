@@ -21,6 +21,9 @@ icon into one continuous section. The group with the most armor points is shown
 first. Equal groups keep their worn-slot order. The default value is `false`,
 which keeps the armor bar in worn-slot order.
 
+Set `glint_opacity` from `0` to `100` to control the opacity of the enchantment
+glint. The default value is `30`. Set it to `0` to disable the glint.
+
 ---
 
 ## For Resource Pack Creators & Mod Developers
