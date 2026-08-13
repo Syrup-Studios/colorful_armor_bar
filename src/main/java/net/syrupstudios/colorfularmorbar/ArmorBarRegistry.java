@@ -24,21 +24,38 @@ import java.util.Map;
 public final class ArmorBarRegistry {
     //? if >=1.21.11 {
     /*public static final Identifier FALLBACK_TEXTURE = Identifier.fromNamespaceAndPath("minecraft", "textures/armoricon/iron.png");
+    private static final Identifier CUSTOM_TRIM_TEXTURE = Identifier.fromNamespaceAndPath(
+            "colorful_armor_bar", "textures/armoricon/trim.png");
+    private static final Identifier VANILLA_TRIM_TEXTURE = Identifier.fromNamespaceAndPath(
+            "minecraft", "textures/trims/items/chestplate_trim.png");
     private static final Map<String, Identifier> TEXTURE_CACHE = new HashMap<>();
     private static final Map<Identifier, boolean[]> ALPHA_MASK_CACHE = new HashMap<>();
+    private static final Map<Identifier, boolean[]> TRIM_ALPHA_MASK_CACHE = new HashMap<>();
     *///?} elif >=1.21 {
     public static final ResourceLocation FALLBACK_TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/armoricon/iron.png");
+    private static final ResourceLocation CUSTOM_TRIM_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+            "colorful_armor_bar", "textures/armoricon/trim.png");
+    private static final ResourceLocation VANILLA_TRIM_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+            "minecraft", "textures/trims/items/chestplate_trim.png");
     private static final Map<String, ResourceLocation> TEXTURE_CACHE = new HashMap<>();
     private static final Map<ResourceLocation, boolean[]> ALPHA_MASK_CACHE = new HashMap<>();
+    private static final Map<ResourceLocation, boolean[]> TRIM_ALPHA_MASK_CACHE = new HashMap<>();
     //?} else {
     /*public static final ResourceLocation FALLBACK_TEXTURE = new ResourceLocation("minecraft", "textures/armoricon/iron.png");
+    private static final ResourceLocation CUSTOM_TRIM_TEXTURE = new ResourceLocation(
+            "colorful_armor_bar", "textures/armoricon/trim.png");
+    private static final ResourceLocation VANILLA_TRIM_TEXTURE = new ResourceLocation(
+            "minecraft", "textures/trims/items/chestplate_trim.png");
     private static final Map<String, ResourceLocation> TEXTURE_CACHE = new HashMap<>();
     private static final Map<ResourceLocation, boolean[]> ALPHA_MASK_CACHE = new HashMap<>();
+    private static final Map<ResourceLocation, boolean[]> TRIM_ALPHA_MASK_CACHE = new HashMap<>();
     *///?}
 
     private static final int ICON_WIDTH = 18;
     private static final int ICON_HEIGHT = 9;
+    private static final int TRIM_ICON_SIZE = 9;
     private static final boolean[] FULL_ALPHA_MASK = createFullAlphaMask();
+    private static final boolean[] EMPTY_TRIM_ALPHA_MASK = new boolean[TRIM_ICON_SIZE * TRIM_ICON_SIZE];
 
     private ArmorBarRegistry() {
     }
@@ -136,43 +153,75 @@ public final class ArmorBarRegistry {
             return cached;
         }
 
-        boolean[] mask = loadAlphaMask(texture, resourceManager);
+        boolean[] mask = loadAlphaMask(texture, resourceManager, ICON_WIDTH, ICON_HEIGHT, FULL_ALPHA_MASK);
         ALPHA_MASK_CACHE.put(texture, mask);
         return mask;
     }
 
     //? if >=1.21.11 {
-    /*private static boolean[] loadAlphaMask(Identifier texture, ResourceManager resourceManager) {
+    /*public static boolean[] getTrimAlphaMask(Identifier patternId, ResourceManager resourceManager) {
+        Identifier patternTexture = Identifier.fromNamespaceAndPath(
+                patternId.getNamespace(), "textures/armoricon/trims/" + patternId.getPath() + ".png");
     *///?} else {
-    private static boolean[] loadAlphaMask(ResourceLocation texture, ResourceManager resourceManager) {
+    public static boolean[] getTrimAlphaMask(ResourceLocation patternId, ResourceManager resourceManager) {
+        //? if >=1.21 {
+        ResourceLocation patternTexture = ResourceLocation.fromNamespaceAndPath(
+                patternId.getNamespace(), "textures/armoricon/trims/" + patternId.getPath() + ".png");
+        //?} else {
+        /*ResourceLocation patternTexture = new ResourceLocation(
+                patternId.getNamespace(), "textures/armoricon/trims/" + patternId.getPath() + ".png");
+        *///?}
+    //?}
+        boolean[] cached = TRIM_ALPHA_MASK_CACHE.get(patternTexture);
+        if (cached != null) {
+            return cached;
+        }
+
+        var texture = resourceManager.getResource(patternTexture).isPresent()
+                ? patternTexture
+                : resourceManager.getResource(CUSTOM_TRIM_TEXTURE).isPresent()
+                        ? CUSTOM_TRIM_TEXTURE
+                        : VANILLA_TRIM_TEXTURE;
+        boolean[] mask = loadAlphaMask(
+                texture, resourceManager, TRIM_ICON_SIZE, TRIM_ICON_SIZE, EMPTY_TRIM_ALPHA_MASK);
+        TRIM_ALPHA_MASK_CACHE.put(patternTexture, mask);
+        return mask;
+    }
+
+    //? if >=1.21.11 {
+    /*private static boolean[] loadAlphaMask(Identifier texture, ResourceManager resourceManager, int targetWidth,
+                                           int targetHeight, boolean[] fallback) {
+    *///?} else {
+    private static boolean[] loadAlphaMask(ResourceLocation texture, ResourceManager resourceManager, int targetWidth,
+                                           int targetHeight, boolean[] fallback) {
     //?}
         try {
             var resource = resourceManager.getResource(texture);
             if (resource.isEmpty()) {
-                return FULL_ALPHA_MASK;
+                return fallback;
             }
 
             try (InputStream stream = resource.get().open()) {
                 BufferedImage image = ImageIO.read(stream);
                 if (image == null || image.getWidth() <= 0 || image.getHeight() <= 0) {
-                    return FULL_ALPHA_MASK;
+                    return fallback;
                 }
 
-                boolean[] mask = new boolean[ICON_WIDTH * ICON_HEIGHT];
-                for (int y = 0; y < ICON_HEIGHT; y++) {
-                    int fromY = y * image.getHeight() / ICON_HEIGHT;
-                    int toY = Math.max(fromY + 1, (y + 1) * image.getHeight() / ICON_HEIGHT);
-                    for (int x = 0; x < ICON_WIDTH; x++) {
-                        int fromX = x * image.getWidth() / ICON_WIDTH;
-                        int toX = Math.max(fromX + 1, (x + 1) * image.getWidth() / ICON_WIDTH);
-                        mask[y * ICON_WIDTH + x] = hasVisiblePixel(image, fromX, toX, fromY, toY);
+                boolean[] mask = new boolean[targetWidth * targetHeight];
+                for (int y = 0; y < targetHeight; y++) {
+                    int fromY = y * image.getHeight() / targetHeight;
+                    int toY = Math.max(fromY + 1, (y + 1) * image.getHeight() / targetHeight);
+                    for (int x = 0; x < targetWidth; x++) {
+                        int fromX = x * image.getWidth() / targetWidth;
+                        int toX = Math.max(fromX + 1, (x + 1) * image.getWidth() / targetWidth);
+                        mask[y * targetWidth + x] = hasVisiblePixel(image, fromX, toX, fromY, toY);
                     }
                 }
                 return mask;
             }
         } catch (IOException exception) {
-            ColorfulArmorBar.LOGGER.warn("Could not read armor icon {} for its enchantment glint mask", texture, exception);
-            return FULL_ALPHA_MASK;
+            ColorfulArmorBar.LOGGER.warn("Could not read armor-bar mask texture {}", texture, exception);
+            return fallback;
         }
     }
 
@@ -198,5 +247,6 @@ public final class ArmorBarRegistry {
     public static void clearCache() {
         TEXTURE_CACHE.clear();
         ALPHA_MASK_CACHE.clear();
+        TRIM_ALPHA_MASK_CACHE.clear();
     }
 }

@@ -9,6 +9,7 @@ Instead of hardcoding compatibility or waiting for backend code updates, everyth
 
 ## Features
 * **Mix-and-Match (Split Rendering):** If you're wearing a diamond chestplate with netherite boots, the mod automatically splits your armor shield icons to accurately show both materials at once.
+* **Armor Trims:** Trimmed armor adds a small trim mark to its armor points. The mark uses the trim material's color, including colors supplied by other mods.
 * **100% Client-Side:** Safe to use on any public server or multiplayer network. You don't need it installed on the server for it to work.
 * **Fully Customizable:** Don't like the default colors? You can easily change the icons or add support for modded armor using resource packs.
 
@@ -37,6 +38,19 @@ The mod automatically checks this path structure:
 
 Armor-icon textures must be 18 pixels wide by 9 pixels high. The left and right
 9-pixel halves are used for full and half-point rendering.
+
+Each trim pattern can provide its own armor-bar texture at
+`assets/<namespace>/textures/armoricon/trims/<pattern>.png`. For example, the
+Sentry and Dune trim textures use these paths:
+
+* `assets/minecraft/textures/armoricon/trims/sentry.png`
+* `assets/minecraft/textures/armoricon/trims/dune.png`
+
+If a pattern-specific texture is missing, the mod checks
+`assets/colorful_armor_bar/textures/armoricon/trim.png`. It then falls back to
+Minecraft's `textures/trims/items/chestplate_trim.png`. Trim textures can use any
+size. Their alpha channel defines the mark, and the mod applies the trim material
+color at run time.
 
 > **Note:** If the mod can't find a custom texture for an armor material, it safely falls back to a clean, default iron-style template.
 

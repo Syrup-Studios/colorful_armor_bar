@@ -4,16 +4,19 @@ package net.syrupstudios.colorfularmorbar;
 import com.mojang.blaze3d.systems.RenderSystem;
 //? if >=1.21.11 {
 /*import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
 *///?} else {
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.armortrim.ArmorTrim;
 //?}
 import net.minecraft.client.Minecraft;
+//? if >=1.21
+import net.minecraft.core.component.DataComponents;
 //? if >=26 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?} else {
@@ -50,13 +53,15 @@ public final class ArmorBarRenderer {
     }
 
     //? if >=1.21.11 {
-    /*private record ArmorPoint(Identifier texture, boolean enchanted, boolean[] alphaMask) {
+    /*private record ArmorPoint(Identifier texture, boolean enchanted, boolean[] alphaMask, Integer trimColor,
+                              boolean[] trimMask) {
     }
 
     private record GlintSegment(boolean[] alphaMask, int x, int u, int width) {
     }
     *///?} else {
-    private record ArmorPoint(ResourceLocation texture, boolean enchanted, boolean[] alphaMask) {
+    private record ArmorPoint(ResourceLocation texture, boolean enchanted, boolean[] alphaMask, Integer trimColor,
+                              boolean[] trimMask) {
     }
 
     private record GlintSegment(boolean[] alphaMask, int x, int u, int width) {
@@ -104,7 +109,8 @@ public final class ArmorBarRenderer {
         }
 
         List<ArmorPoint> points = ArmorBarLayout.build(
-                player.getArmorValue(), contributions, new ArmorPoint(ArmorBarRegistry.FALLBACK_TEXTURE, false, null),
+                player.getArmorValue(), contributions,
+                new ArmorPoint(ArmorBarRegistry.FALLBACK_TEXTURE, false, null, null, null),
                 ColorfulArmorBarConfig.GROUP_MATCHING_ARMOR.get());
         List<GlintSegment> glintSegments = new ArrayList<>();
 
@@ -153,7 +159,28 @@ public final class ArmorBarRenderer {
         boolean[] alphaMask = enchanted
                 ? ArmorBarRegistry.getAlphaMask(texture, minecraft.getResourceManager())
                 : null;
-        return new ArmorPoint(texture, enchanted, alphaMask);
+        ArmorTrim trim = getTrim(stack, minecraft);
+        Integer trimColor = trim == null ? null : getTrimColor(trim);
+        boolean[] trimMask = trim == null
+                ? null
+                : ArmorBarRegistry.getTrimAlphaMask(
+                        trim.pattern().value().assetId(), minecraft.getResourceManager());
+        return new ArmorPoint(texture, enchanted, alphaMask, trimColor, trimMask);
+    }
+
+    private static ArmorTrim getTrim(ItemStack stack, Minecraft minecraft) {
+        //? if >=1.21 {
+        return stack.get(DataComponents.TRIM);
+        //?} else {
+        /*return minecraft.level == null
+                ? null
+                : ArmorTrim.getTrim(minecraft.level.registryAccess(), stack).orElse(null);
+        *///?}
+    }
+
+    private static int getTrimColor(ArmorTrim trim) {
+        var color = trim.material().value().description().getStyle().getColor();
+        return color == null ? 0xFFFFFF : color.getValue();
     }
 
     //? if >=26 {
@@ -164,8 +191,30 @@ public final class ArmorBarRenderer {
                                   List<GlintSegment> glintSegments) {
     //?}
         blit(guiGraphics, point.texture(), x, y, u, 0, width, 9);
+        if (point.trimColor() != null) {
+            renderTrimIcon(guiGraphics, x, y, u, width, point.trimColor(), point.trimMask());
+        }
         if (point.enchanted()) {
             glintSegments.add(new GlintSegment(point.alphaMask(), x, u, width));
+        }
+    }
+
+    //? if >=26 {
+    /*private static void renderTrimIcon(GuiGraphicsExtractor guiGraphics, int x, int y, int u, int width,
+                                       int trimColor, boolean[] trimMask) {
+    *///?} else {
+    private static void renderTrimIcon(GuiGraphics guiGraphics, int x, int y, int u, int width, int trimColor,
+                                       boolean[] trimMask) {
+    //?}
+        int sourceX = u >= 9 ? 0 : u;
+        int argb = 0xFF000000 | trimColor;
+        for (int row = 0; row < 9; row++) {
+            for (int column = 0; column < width; column++) {
+                int iconX = sourceX + column;
+                if (trimMask[row * 9 + iconX]) {
+                    guiGraphics.fill(x + column, y + row, x + column + 1, y + row + 1, argb);
+                }
+            }
         }
     }
 
@@ -185,9 +234,12 @@ public final class ArmorBarRenderer {
         int glintColor = Math.round(opacity * 255.0F) << 24 | 0xFFFFFF;
 
         // Older GUI renderers use a global alpha. Flush around it so the alpha
-        // only applies to the vanilla glint texture.
+        // only applies to the vanilla glint texture. The solid trim pass can
+        // leave a non-alpha blend function active, so restore it first.
         //? if <1.21.11 {
         guiGraphics.flush();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         guiGraphics.setColor(1.0F, 1.0F, 1.0F, opacity);
         //?}
 
