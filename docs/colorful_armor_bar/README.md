@@ -24,7 +24,3 @@ The mod automatically checks this path structure:
 * **Modded Example:** If a mod named `flingleblob` adds a `ruby` armor set, you would place the texture in: `assets/flingleblob/textures/armoricon/ruby.png`
 
 > **Note:** If the mod can't find a custom texture for an armor material, it safely falls back to a clean, default iron-style template.
-
-
-
-> Colorful Armor Bar | [Modrinth](https://modrinth.com/mod/colorful-armor-bar) | [Curseforge](https://www.curseforge.com/minecraft/mc-mods/colorful-armor-bar/) | [GitHub](https://github.com/Syrup-Studios/colorful_armor_bar)
