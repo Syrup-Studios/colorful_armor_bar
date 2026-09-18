@@ -156,10 +156,10 @@ public final class ArmorBarRenderer {
     private static ArmorPoint createArmorPoint(ItemStack stack, Minecraft minecraft) {
         var texture = ArmorBarRegistry.getTexture(stack, minecraft.getResourceManager());
         boolean enchanted = stack.hasFoil();
-        boolean[] alphaMask = enchanted
+        ArmorTrim trim = getTrim(stack, minecraft);
+        boolean[] alphaMask = enchanted || trim != null
                 ? ArmorBarRegistry.getAlphaMask(texture, minecraft.getResourceManager())
                 : null;
-        ArmorTrim trim = getTrim(stack, minecraft);
         Integer trimColor = trim == null ? null : getTrimColor(trim);
         boolean[] trimMask = trim == null
                 ? null
@@ -192,7 +192,7 @@ public final class ArmorBarRenderer {
     //?}
         blit(guiGraphics, point.texture(), x, y, u, 0, width, 9);
         if (point.trimColor() != null) {
-            renderTrimIcon(guiGraphics, x, y, u, width, point.trimColor(), point.trimMask());
+            renderTrimIcon(guiGraphics, x, y, u, width, point.trimColor(), point.trimMask(), point.alphaMask());
         }
         if (point.enchanted()) {
             glintSegments.add(new GlintSegment(point.alphaMask(), x, u, width));
@@ -201,17 +201,17 @@ public final class ArmorBarRenderer {
 
     //? if >=26 {
     /*private static void renderTrimIcon(GuiGraphicsExtractor guiGraphics, int x, int y, int u, int width,
-                                       int trimColor, boolean[] trimMask) {
+                                       int trimColor, boolean[] trimMask, boolean[] alphaMask) {
     *///?} else {
     private static void renderTrimIcon(GuiGraphics guiGraphics, int x, int y, int u, int width, int trimColor,
-                                       boolean[] trimMask) {
+                                       boolean[] trimMask, boolean[] alphaMask) {
     //?}
         int sourceX = u >= 9 ? 0 : u;
         int argb = 0xFF000000 | trimColor;
         for (int row = 0; row < 9; row++) {
             for (int column = 0; column < width; column++) {
                 int iconX = sourceX + column;
-                if (trimMask[row * 9 + iconX]) {
+                if (trimMask[row * 9 + iconX] && alphaMask[row * 18 + u + column]) {
                     guiGraphics.fill(x + column, y + row, x + column + 1, y + row + 1, argb);
                 }
             }

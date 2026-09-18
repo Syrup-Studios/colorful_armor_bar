@@ -17,10 +17,11 @@ Instead of hardcoding compatibility or waiting for backend code updates, everyth
 
 The client config is stored in `config/colorful_armor_bar.json5`.
 
-Set `group_matching_armor` to `true` to combine armor pieces that use the same
-icon into one continuous section. The group with the most armor points is shown
-first. Equal groups keep their worn-slot order. The default value is `false`,
-which keeps the armor bar in worn-slot order.
+Set `group_matching_armor` to `true` to combine armor pieces with the same
+icon, enchantment glint state, and trim appearance into one continuous
+section. The group with the most armor points is shown first. Equal groups keep
+their worn-slot order. The default value is `false`, which keeps the armor bar
+in worn-slot order.
 
 Set `glint_opacity` from `0` to `100` to control the opacity of the enchantment
 glint. The default value is `30`. Set it to `0` to disable the glint.
@@ -63,5 +64,11 @@ The Stonecutter workspace currently produces these client artifacts:
 * Minecraft 1.21.11: Fabric and NeoForge
 * Minecraft 26.2: Fabric and NeoForge
 
-Run `./gradlew build` to compile the active Stonecutter target, or address a
-specific target directly, for example `./gradlew :1.21.1-neoforge:build`.
+Run `./gradlew build` to compile all registered targets, or address a specific
+target directly, for example `./gradlew :1.21.1-neoforge:build`.
+
+To change the shared Stonecutter source target for IDE work, run for example
+`./gradlew "Set active project to 1.21.1-fabric"`.
+
+The project selects Java 21 for the Gradle daemon. The Minecraft 1.20.1
+target still uses Java 17.

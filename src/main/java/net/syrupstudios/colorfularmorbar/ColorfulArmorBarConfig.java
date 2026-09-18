@@ -13,7 +13,7 @@ public final class ColorfulArmorBarConfig {
     public static final BooleanConfigValue GROUP_MATCHING_ARMOR = SPEC.booleanValue(
             "group_matching_armor",
             false,
-            "Combine matching armor materials and show the largest group first.");
+            "Combine armor with the same icon, glint state, and trim appearance; show the largest group first.");
 
     public static final IntConfigValue GLINT_OPACITY = SPEC.intValue(
             "glint_opacity",

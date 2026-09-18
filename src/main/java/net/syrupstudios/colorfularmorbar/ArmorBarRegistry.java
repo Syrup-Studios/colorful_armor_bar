@@ -67,7 +67,7 @@ public final class ArmorBarRegistry {
         Identifier assetId = equippable == null
                 ? null
                 : equippable.assetId().map(key -> key.identifier()).orElse(null);
-        String cacheKey = assetId == null ? itemId.toString() : assetId.toString();
+        String cacheKey = (assetId == null ? "" : assetId.toString()) + "|" + itemId;
 
         Identifier cached = TEXTURE_CACHE.get(cacheKey);
         if (cached != null) {

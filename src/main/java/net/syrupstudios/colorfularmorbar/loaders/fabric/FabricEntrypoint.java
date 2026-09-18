@@ -58,8 +58,8 @@ public class FabricEntrypoint implements ClientModInitializer {
             //? if >=1.21 {
             return ResourceLocation.fromNamespaceAndPath(ColorfulArmorBar.MOD_ID, "armor_bar_reload_listener");
             //?} else {
-            /*return new ResourceLocation(ColorfulArmorBar.MOD_ID, "armor_bar_reload_listener");*/
-            //?}
+            /*return new ResourceLocation(ColorfulArmorBar.MOD_ID, "armor_bar_reload_listener");
+            *///?}
         }
         //?}
 
