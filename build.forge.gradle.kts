@@ -36,12 +36,6 @@ legacyForge {
 
 dependencies {
     implementation(syrupLibraryCoordinate)
-    jarJar(syrupLibraryCoordinate) {
-        version {
-            strictly("[$syrupLibraryVersion]")
-            prefer(syrupLibraryVersion)
-        }
-    }
 }
 
 sourceSets.main {

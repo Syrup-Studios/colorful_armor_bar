@@ -13,6 +13,9 @@ Instead of hardcoding compatibility or waiting for backend code updates, everyth
 * **100% Client-Side:** Safe to use on any public server or multiplayer network. You don't need it installed on the server for it to work.
 * **Fully Customizable:** Don't like the default colors? You can easily change the icons or add support for modded armor using resource packs.
 
+Install the matching **Syrup Library** version separately. It is required by
+Colorful Armor Bar and is no longer bundled with the mod.
+
 ## Configuration
 
 The client config is stored in `config/colorful_armor_bar.json5`.
@@ -25,6 +28,10 @@ in worn-slot order.
 
 Set `glint_opacity` from `0` to `100` to control the opacity of the enchantment
 glint. The default value is `30`. Set it to `0` to disable the glint.
+
+You can also open these settings in-game from the mod's config screen. On
+Fabric, use Mod Menu; on Forge or NeoForge, open the Mods screen. Changes
+saved in the screen apply immediately.
 
 ---
 
