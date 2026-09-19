@@ -92,11 +92,14 @@ val generateFabricMetadata = tasks.register("generateFabricMetadata") {
 
 tasks.processResources {
     val packFormat = project.property("deps.resource_pack_format")
+    val packFormatMinor = project.findProperty("deps.resource_pack_minor")
     val props = mapOf(
         "version" to project.version,
         "mc" to minecraftVersion,
         "packVersions" to if (modernHud) {
-            "\"min_format\": [$packFormat, 0],\n    \"max_format\": $packFormat,"
+            val version = if (packFormatMinor == null) "$packFormat, 0" else "$packFormat, $packFormatMinor"
+            val maxVersion = if (packFormatMinor == null) "$packFormat" else "[$version]"
+            "\"min_format\": [$version],\n    \"max_format\": $maxVersion,"
         } else {
             "\"pack_format\": $packFormat,"
         },
