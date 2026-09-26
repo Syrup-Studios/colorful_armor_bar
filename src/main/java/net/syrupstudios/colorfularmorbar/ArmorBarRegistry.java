@@ -1,12 +1,11 @@
 package net.syrupstudios.colorfularmorbar;
 
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 //? if >=1.21.11 {
 /*import net.minecraft.core.component.DataComponents;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.equipment.Equippable;
 *///?} else {
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ArmorItem;
 //?}
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -22,16 +21,7 @@ import java.util.Map;
 
 /** Version-neutral texture lookup and cache. Loader entrypoints own reload registration. */
 public final class ArmorBarRegistry {
-    //? if >=1.21.11 {
-    /*public static final Identifier FALLBACK_TEXTURE = Identifier.fromNamespaceAndPath("minecraft", "textures/armoricon/iron.png");
-    private static final Identifier CUSTOM_TRIM_TEXTURE = Identifier.fromNamespaceAndPath(
-            "colorful_armor_bar", "textures/armoricon/trim.png");
-    private static final Identifier VANILLA_TRIM_TEXTURE = Identifier.fromNamespaceAndPath(
-            "minecraft", "textures/trims/items/chestplate_trim.png");
-    private static final Map<String, Identifier> TEXTURE_CACHE = new HashMap<>();
-    private static final Map<Identifier, boolean[]> ALPHA_MASK_CACHE = new HashMap<>();
-    private static final Map<Identifier, boolean[]> TRIM_ALPHA_MASK_CACHE = new HashMap<>();
-    *///?} elif >=1.21 {
+    //? if >=1.21 {
     public static final ResourceLocation FALLBACK_TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/armoricon/iron.png");
     private static final ResourceLocation CUSTOM_TRIM_TEXTURE = ResourceLocation.fromNamespaceAndPath(
             "colorful_armor_bar", "textures/armoricon/trim.png");
@@ -61,34 +51,34 @@ public final class ArmorBarRegistry {
     }
 
     //? if >=1.21.11 {
-    /*public static Identifier getTexture(ItemStack stack, ResourceManager resourceManager) {
-        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+    /*public static ResourceLocation getTexture(ItemStack stack, ResourceManager resourceManager) {
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
-        Identifier assetId = equippable == null
+        ResourceLocation assetId = equippable == null
                 ? null
                 : equippable.assetId().map(key -> key.identifier()).orElse(null);
         String cacheKey = (assetId == null ? "" : assetId.toString()) + "|" + itemId;
 
-        Identifier cached = TEXTURE_CACHE.get(cacheKey);
+        ResourceLocation cached = TEXTURE_CACHE.get(cacheKey);
         if (cached != null) {
             return cached;
         }
 
-        Identifier texture = assetId == null ? null : findTexture(assetId, resourceManager);
+        ResourceLocation texture = assetId == null ? null : findTexture(assetId, resourceManager);
         if (texture == null) {
-            Identifier strippedItemId = Identifier.fromNamespaceAndPath(itemId.getNamespace(), stripEquipmentSuffix(itemId.getPath()));
+            ResourceLocation strippedItemId = ResourceLocation.fromNamespaceAndPath(itemId.getNamespace(), stripEquipmentSuffix(itemId.getPath()));
             if (!strippedItemId.equals(assetId)) {
                 texture = findTexture(strippedItemId, resourceManager);
             }
         }
 
-        Identifier resolved = texture == null ? FALLBACK_TEXTURE : texture;
+        ResourceLocation resolved = texture == null ? FALLBACK_TEXTURE : texture;
         TEXTURE_CACHE.put(cacheKey, resolved);
         return resolved;
     }
 
-    private static Identifier findTexture(Identifier materialId, ResourceManager resourceManager) {
-        Identifier texture = Identifier.fromNamespaceAndPath(
+    private static ResourceLocation findTexture(ResourceLocation materialId, ResourceManager resourceManager) {
+        ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(
                 materialId.getNamespace(), "textures/armoricon/" + materialId.getPath() + ".png");
         return resourceManager.getResource(texture).isPresent() ? texture : null;
     }
@@ -143,11 +133,7 @@ public final class ArmorBarRegistry {
         return path;
     }
 
-    //? if >=1.21.11 {
-    /*public static boolean[] getAlphaMask(Identifier texture, ResourceManager resourceManager) {
-    *///?} else {
     public static boolean[] getAlphaMask(ResourceLocation texture, ResourceManager resourceManager) {
-    //?}
         boolean[] cached = ALPHA_MASK_CACHE.get(texture);
         if (cached != null) {
             return cached;
@@ -158,11 +144,6 @@ public final class ArmorBarRegistry {
         return mask;
     }
 
-    //? if >=1.21.11 {
-    /*public static boolean[] getTrimAlphaMask(Identifier patternId, ResourceManager resourceManager) {
-        Identifier patternTexture = Identifier.fromNamespaceAndPath(
-                patternId.getNamespace(), "textures/armoricon/trims/" + patternId.getPath() + ".png");
-    *///?} else {
     public static boolean[] getTrimAlphaMask(ResourceLocation patternId, ResourceManager resourceManager) {
         //? if >=1.21 {
         ResourceLocation patternTexture = ResourceLocation.fromNamespaceAndPath(
@@ -171,7 +152,6 @@ public final class ArmorBarRegistry {
         /*ResourceLocation patternTexture = new ResourceLocation(
                 patternId.getNamespace(), "textures/armoricon/trims/" + patternId.getPath() + ".png");
         *///?}
-    //?}
         boolean[] cached = TRIM_ALPHA_MASK_CACHE.get(patternTexture);
         if (cached != null) {
             return cached;
@@ -188,13 +168,8 @@ public final class ArmorBarRegistry {
         return mask;
     }
 
-    //? if >=1.21.11 {
-    /*private static boolean[] loadAlphaMask(Identifier texture, ResourceManager resourceManager, int targetWidth,
-                                           int targetHeight, boolean[] fallback) {
-    *///?} else {
     private static boolean[] loadAlphaMask(ResourceLocation texture, ResourceManager resourceManager, int targetWidth,
                                            int targetHeight, boolean[] fallback) {
-    //?}
         try {
             var resource = resourceManager.getResource(texture);
             if (resource.isEmpty()) {

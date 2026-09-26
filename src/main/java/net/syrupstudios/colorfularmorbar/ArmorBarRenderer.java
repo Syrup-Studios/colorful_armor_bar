@@ -2,26 +2,21 @@ package net.syrupstudios.colorfularmorbar;
 
 //? if <1.21.11
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.resources.ResourceLocation;
 //? if >=1.21.11 {
 /*import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.item.equipment.trim.ArmorTrim;
 *///?} else {
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.armortrim.ArmorTrim;
 //?}
 import net.minecraft.client.Minecraft;
 //? if >=1.21
 import net.minecraft.core.component.DataComponents;
-//? if >=26 {
-/*import net.minecraft.client.gui.GuiGraphicsExtractor;
-*///?} else {
 import net.minecraft.client.gui.GuiGraphics;
-//?}
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -38,10 +33,7 @@ public final class ArmorBarRenderer {
             EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD
     };
 
-    //? if >=1.21.11 {
-    /*private static final Identifier ARMOR_EMPTY_SPRITE = Identifier.parse("hud/armor_empty");
-    private static final Identifier ENCHANTED_GLINT_TEXTURE = Identifier.parse("textures/misc/enchanted_glint_item.png");
-    *///?} elif >=1.21 {
+    //? if >=1.21 {
     private static final ResourceLocation ARMOR_EMPTY_SPRITE = ResourceLocation.parse("hud/armor_empty");
     private static final ResourceLocation ENCHANTED_GLINT_TEXTURE = ResourceLocation.parse("textures/misc/enchanted_glint_item.png");
     //?} else {
@@ -52,27 +44,13 @@ public final class ArmorBarRenderer {
     private ArmorBarRenderer() {
     }
 
-    //? if >=1.21.11 {
-    /*private record ArmorPoint(Identifier texture, boolean enchanted, boolean[] alphaMask, Integer trimColor,
-                              boolean[] trimMask) {
-    }
-
-    private record GlintSegment(boolean[] alphaMask, int x, int u, int width) {
-    }
-    *///?} else {
     private record ArmorPoint(ResourceLocation texture, boolean enchanted, boolean[] alphaMask, Integer trimColor,
                               boolean[] trimMask) {
     }
 
     private record GlintSegment(boolean[] alphaMask, int x, int u, int width) {
     }
-    //?}
-
-    //? if >=26 {
-    /*public static void render(GuiGraphicsExtractor guiGraphics, int armorTop) {
-    *///?} else {
     public static void render(GuiGraphics guiGraphics, int armorTop) {
-    //?}
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
         if (player == null || player.getArmorValue() <= 0) {
@@ -183,13 +161,8 @@ public final class ArmorBarRenderer {
         return color == null ? 0xFFFFFF : color.getValue();
     }
 
-    //? if >=26 {
-    /*private static void blitPoint(GuiGraphicsExtractor guiGraphics, ArmorPoint point, int x, int y, int u, int width,
-                                  List<GlintSegment> glintSegments) {
-    *///?} else {
     private static void blitPoint(GuiGraphics guiGraphics, ArmorPoint point, int x, int y, int u, int width,
                                   List<GlintSegment> glintSegments) {
-    //?}
         blit(guiGraphics, point.texture(), x, y, u, 0, width, 9);
         if (point.trimColor() != null) {
             renderTrimIcon(guiGraphics, x, y, u, width, point.trimColor(), point.trimMask(), point.alphaMask());
@@ -199,13 +172,8 @@ public final class ArmorBarRenderer {
         }
     }
 
-    //? if >=26 {
-    /*private static void renderTrimIcon(GuiGraphicsExtractor guiGraphics, int x, int y, int u, int width,
-                                       int trimColor, boolean[] trimMask, boolean[] alphaMask) {
-    *///?} else {
     private static void renderTrimIcon(GuiGraphics guiGraphics, int x, int y, int u, int width, int trimColor,
                                        boolean[] trimMask, boolean[] alphaMask) {
-    //?}
         int sourceX = u >= 9 ? 0 : u;
         int argb = 0xFF000000 | trimColor;
         for (int row = 0; row < 9; row++) {
@@ -218,11 +186,7 @@ public final class ArmorBarRenderer {
         }
     }
 
-    //? if >=26 {
-    /*private static void renderGlint(GuiGraphicsExtractor guiGraphics, List<GlintSegment> segments, int y) {
-    *///?} else {
     private static void renderGlint(GuiGraphics guiGraphics, List<GlintSegment> segments, int y) {
-    //?}
         if (segments.isEmpty()) {
             return;
         }
@@ -279,36 +243,22 @@ public final class ArmorBarRenderer {
         return segment.alphaMask()[row * 18 + segment.u() + column];
     }
 
-    //? if >=26 {
-    /*private static void blit(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y, int u, int v,
-                             int width, int height) {
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height, 18, 9);
-    }
-
-    private static void blitGlint(GuiGraphicsExtractor guiGraphics, int x, int y, int u, int v, int width,
-                                  int color) {
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENCHANTED_GLINT_TEXTURE, x, y, u, v, width, 1,
-                width * GLINT_TEXTURE_SCALE, GLINT_TEXTURE_SCALE, GLINT_TEXTURE_SIZE, GLINT_TEXTURE_SIZE, color);
-    }
-    *///?} elif >=1.21.11 {
-    /*private static void blit(GuiGraphics guiGraphics, Identifier texture, int x, int y, int u, int v,
-                             int width, int height) {
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height, 18, 9);
-    }
-
-    private static void blitGlint(GuiGraphics guiGraphics, int x, int y, int u, int v, int width, int color) {
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENCHANTED_GLINT_TEXTURE, x, y, u, v, width, 1,
-                width * GLINT_TEXTURE_SCALE, GLINT_TEXTURE_SCALE, GLINT_TEXTURE_SIZE, GLINT_TEXTURE_SIZE, color);
-    }
-    *///?} else {
     private static void blit(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int u, int v,
                              int width, int height) {
+        //? if >=1.21.11 {
+        /*guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height, 18, 9);
+        *///?} else {
         guiGraphics.blit(texture, x, y, u, v, width, height, 18, 9);
+        //?}
     }
 
     private static void blitGlint(GuiGraphics guiGraphics, int x, int y, int u, int v, int width, int color) {
+        //? if >=1.21.11 {
+        /*guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENCHANTED_GLINT_TEXTURE, x, y, u, v, width, 1,
+                width * GLINT_TEXTURE_SCALE, GLINT_TEXTURE_SCALE, GLINT_TEXTURE_SIZE, GLINT_TEXTURE_SIZE, color);
+        *///?} else {
         guiGraphics.blit(ENCHANTED_GLINT_TEXTURE, x, y, width, 1, (float) u, (float) v,
                 width * GLINT_TEXTURE_SCALE, GLINT_TEXTURE_SCALE, GLINT_TEXTURE_SIZE, GLINT_TEXTURE_SIZE);
+        //?}
     }
-    //?}
 }

@@ -20,9 +20,6 @@
 			"net.syrupstudios.colorfularmorbar.loaders.fabric.FabricEntrypoint"
 		]
 	},
-	"mixins": [
-		"${modId}.mixins.json"
-	],
 	"depends": {
 		"fabricloader": ">=${fl}",
 		"minecraft": "${mc}",

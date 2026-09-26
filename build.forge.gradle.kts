@@ -1,12 +1,14 @@
 plugins {
-    id("net.neoforged.moddev.legacyforge") version "2.0.137"
-    id("me.modmuss50.mod-publish-plugin") version "2.2.0"
+    id("net.neoforged.moddev.legacyforge")
+    id("neoforge-mutex")
+    id("me.modmuss50.mod-publish-plugin")
     id("maven-publish")
 }
 
-val mcVersion = property("deps.minecraft") as String
+val mcVersion = stonecutter.current.version
 val forgeVersion = property("deps.forge_version") as String
 val modVersion = property("mod.version") as String
+val forgeMinecraftRange = property("mod.forge_mc_range").toString()
 val targetJavaVersion = 17
 val syrupLibraryVersion = "${property("deps.syrup_library")}+$mcVersion-forge"
 val syrupLibraryCoordinate = "net.syrupstudios:syrup_library:$syrupLibraryVersion"
@@ -28,7 +30,11 @@ legacyForge {
     runs {
         create("client") {
             client()
-            gameDirectory = project.file("run")
+            gameDirectory = rootProject.file("run")
+        }
+        create("server") {
+            server()
+            gameDirectory = rootProject.file("run")
         }
     }
     mods.create(property("mod.id") as String) { sourceSet(sourceSets.main.get()) }
@@ -38,13 +44,26 @@ dependencies {
     implementation(syrupLibraryCoordinate)
 }
 
+// ModDevGradle legacy reobf variants drop runtime dependencies (upstream issue #227).
+configurations.named("reobfRuntimeElements") {
+    extendsFrom(configurations.runtimeElements.get())
+}
+(components["java"] as AdhocComponentWithVariants).withVariantsFromConfiguration(
+    configurations.getByName("reobfRuntimeElements")
+) {
+    mapToMavenScope("runtime")
+}
+
 sourceSets.main {
     java.exclude("net/syrupstudios/colorfularmorbar/mixin/**")
 }
 
 java {
     withSourcesJar()
-    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    toolchain {
+        vendor = JvmVendorSpec.ADOPTIUM
+        languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 }
@@ -56,8 +75,8 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.processResources {
     val props = mapOf(
-        "version" to project.version,
-        "mc" to mcVersion,
+        "version" to modVersion,
+        "mc" to forgeMinecraftRange,
         "packVersions" to "\"pack_format\": ${project.property("deps.resource_pack_format")},",
         "forge" to forgeVersion,
         "modName" to project.property("mod.name"),
@@ -80,4 +99,62 @@ tasks.register<Copy>("buildAndCollect") {
     dependsOn("build")
 }
 
-apply(from = rootProject.file("gradle/platform-publishing.gradle"))
+val compatibleVersions = stonecutter.properties.rawOrNull("mod.mc_releases")
+    ?.asList().orEmpty().map { it.toString() }
+val curseForgeToken = providers.gradleProperty("publish.curseforge_token")
+    .orElse(providers.environmentVariable("CURSEFORGE_TOKEN"))
+val modrinthToken = providers.gradleProperty("publish.modrinth_token")
+    .orElse(providers.environmentVariable("MODRINTH_TOKEN"))
+val publishDryRun = providers.gradleProperty("publish.dry_run")
+    .map(String::toBoolean)
+    .orElse(curseForgeToken.isPresent.not() || modrinthToken.isPresent.not())
+val archiveVersion = "$modVersion+$mcVersion-forge"
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            groupId = project.group.toString()
+            artifactId = base.archivesName.get()
+            version = archiveVersion
+        }
+    }
+    repositories {
+        maven {
+            name = "syrupStudios"
+            url = uri("https://maven.syrupstudios.net/releases/")
+            credentials(PasswordCredentials::class)
+        }
+    }
+}
+
+publishMods {
+    file = tasks.named<Jar>("jar").flatMap { it.archiveFile }
+    dryRun = publishDryRun
+    version = archiveVersion
+    displayName = "${property("mod.name")} ${property("mod.version")} - Forge $mcVersion"
+    changelog = providers.fileContents(rootProject.layout.projectDirectory.file("CHANGELOG.md")).asText
+    type = when (property("publish.release_type").toString().lowercase()) {
+        "stable" -> STABLE
+        "beta" -> BETA
+        "alpha" -> ALPHA
+        else -> error("publish.release_type must be stable, beta, or alpha")
+    }
+    modLoaders.add("forge")
+
+    curseforge {
+        projectId = property("publish.curseforge").toString()
+        accessToken = curseForgeToken
+        compatibleVersions.forEach { minecraftVersions.add(it) }
+        client = true
+        server = false
+        requires("syrup-library")
+    }
+    modrinth {
+        projectId = property("publish.modrinth").toString()
+        accessToken = modrinthToken
+        compatibleVersions.forEach { minecraftVersions.add(it) }
+        environment = CLIENT_ONLY
+        requires("syrup-library")
+    }
+}

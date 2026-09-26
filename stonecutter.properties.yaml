@@ -1,0 +1,82 @@
+mod:
+  id: colorful_armor_bar
+  name: Colorful Armor Bar
+  group: net.syrupstudios
+  version: 1.0.1
+  description: A mod to add colors to the armor bar using texture packs!.
+  authors: SodaSyrup
+  license: RSL-1.0
+  homepage: https://wiki.thesalad.bar/mods/colorful_armor_bar/
+  issues: https://github.com/Syrup-Studios/colorful_armor_bar/issues
+  sources: https://github.com/Syrup-Studios/colorful_armor_bar
+
+publish:
+  curseforge: "1587811"
+  modrinth: "kQZ7uiYu"
+publish.release_type: stable
+
+deps:
+  syrup_library: 0.5.0
+
+loomx.loom_version: 1.17.14
+
+fabric:deps:
+  fabric_loader: 0.19.3
+  "1.20.1":
+    fabric_loader: 0.19.2
+    fabric_api: 0.92.9+1.20.1
+  "1.21.1":
+    fabric_loader: 0.19.2
+    fabric_api: 0.116.12+1.21.1
+  "1.21.11":
+    fabric_api: 0.141.4+1.21.11
+  "26.2":
+    fabric_api: 0.154.2+26.2
+  "26.3":
+    fabric_loader: 0.19.5
+    fabric_api: 0.161.0+26.3
+
+forge:deps:
+  "1.20.1":
+    forge_version: 47.4.0
+
+neoforge:deps:
+  "1.21.1":
+    neoforge_version: 21.1.209
+  "1.21.11":
+    neoforge_version: 21.11.42
+  "26.2":
+    neoforge_version: 26.2.0.15-beta
+  "26.3":
+    neoforge_version: 26.3.0.6-beta
+
+"1.20.1":
+  deps.resource_pack_format: 15
+  mod.mc_releases: ["1.20.1"]
+  mod.fabric_mc_range: "1.20.1"
+  mod.forge_mc_range: "[1.20.1]"
+
+"1.21.1":
+  deps.resource_pack_format: 34
+  mod.mc_releases: ["1.21.1"]
+  mod.fabric_mc_range: "1.21.1"
+  mod.neoforge_mc_range: "[1.21.1]"
+
+"1.21.11":
+  deps.resource_pack_format: 75
+  mod.mc_releases: ["1.21.11"]
+  mod.fabric_mc_range: "1.21.11"
+  mod.neoforge_mc_range: "[1.21.11]"
+
+"26.2":
+  deps.resource_pack_format: 88
+  mod.mc_releases: ["26.2"]
+  mod.fabric_mc_range: "26.2"
+  mod.neoforge_mc_range: "[26.2]"
+
+"26.3":
+  deps.resource_pack_format: 97
+  deps.resource_pack_minor: 1
+  mod.mc_releases: ["26.3"]
+  mod.fabric_mc_range: "26.3"
+  mod.neoforge_mc_range: "[26.3]"

@@ -1,12 +1,14 @@
 plugins {
-    id("net.neoforged.moddev") version "2.0.147"
-    id("me.modmuss50.mod-publish-plugin") version "2.2.0"
+    id("net.neoforged.moddev")
+    id("neoforge-mutex")
+    id("me.modmuss50.mod-publish-plugin")
     id("maven-publish")
 }
 
-val minecraftVersion = property("deps.minecraft") as String
+val minecraftVersion = stonecutter.current.version
 val neoForgeVersion = property("deps.neoforge_version") as String
 val modVersion = property("mod.version") as String
+val neoForgeMinecraftRange = property("mod.neoforge_mc_range").toString()
 val modernHud = stonecutter.eval(stonecutter.current.version, ">=1.21.11")
 val targetJavaVersion = if (stonecutter.eval(stonecutter.current.version, ">=26")) 25 else 21
 val syrupLibraryVersion = "${property("deps.syrup_library")}+$minecraftVersion-neoforge"
@@ -27,7 +29,8 @@ tasks.withType<AbstractArchiveTask>().configureEach {
 neoForge {
     version = neoForgeVersion
     runs {
-        create("client") { client(); gameDirectory = project.file("run") }
+        create("client") { client(); gameDirectory = rootProject.file("run") }
+        create("server") { server(); gameDirectory = rootProject.file("run") }
     }
     mods.create(property("mod.id") as String) { sourceSet(sourceSets.main.get()) }
 }
@@ -42,9 +45,12 @@ if (modernHud) {
 
 java {
     withSourcesJar()
-    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain {
+        vendor = JvmVendorSpec.ADOPTIUM
+        languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+    sourceCompatibility = JavaVersion.toVersion(targetJavaVersion)
+    targetCompatibility = JavaVersion.toVersion(targetJavaVersion)
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -56,8 +62,8 @@ tasks.processResources {
     val packFormat = project.property("deps.resource_pack_format")
     val packFormatMinor = project.findProperty("deps.resource_pack_minor")
     val props = mapOf(
-        "version" to project.version,
-        "mc" to minecraftVersion,
+        "version" to modVersion,
+        "mc" to neoForgeMinecraftRange,
         "packVersions" to if (modernHud) {
             val version = if (packFormatMinor == null) "$packFormat, 0" else "$packFormat, $packFormatMinor"
             val maxVersion = if (packFormatMinor == null) "$packFormat" else "[$version]"
@@ -94,4 +100,62 @@ tasks.register<Copy>("buildAndCollect") {
     dependsOn("build")
 }
 
-apply(from = rootProject.file("gradle/platform-publishing.gradle"))
+val compatibleVersions = stonecutter.properties.rawOrNull("mod.mc_releases")
+    ?.asList().orEmpty().map { it.toString() }
+val curseForgeToken = providers.gradleProperty("publish.curseforge_token")
+    .orElse(providers.environmentVariable("CURSEFORGE_TOKEN"))
+val modrinthToken = providers.gradleProperty("publish.modrinth_token")
+    .orElse(providers.environmentVariable("MODRINTH_TOKEN"))
+val publishDryRun = providers.gradleProperty("publish.dry_run")
+    .map(String::toBoolean)
+    .orElse(curseForgeToken.isPresent.not() || modrinthToken.isPresent.not())
+val archiveVersion = "$modVersion+$minecraftVersion-neoforge"
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            groupId = project.group.toString()
+            artifactId = base.archivesName.get()
+            version = archiveVersion
+        }
+    }
+    repositories {
+        maven {
+            name = "syrupStudios"
+            url = uri("https://maven.syrupstudios.net/releases/")
+            credentials(PasswordCredentials::class)
+        }
+    }
+}
+
+publishMods {
+    file = tasks.named<Jar>("jar").flatMap { it.archiveFile }
+    dryRun = publishDryRun
+    version = archiveVersion
+    displayName = "${property("mod.name")} ${property("mod.version")} - NeoForge $minecraftVersion"
+    changelog = providers.fileContents(rootProject.layout.projectDirectory.file("CHANGELOG.md")).asText
+    type = when (property("publish.release_type").toString().lowercase()) {
+        "stable" -> STABLE
+        "beta" -> BETA
+        "alpha" -> ALPHA
+        else -> error("publish.release_type must be stable, beta, or alpha")
+    }
+    modLoaders.add("neoforge")
+
+    curseforge {
+        projectId = property("publish.curseforge").toString()
+        accessToken = curseForgeToken
+        compatibleVersions.forEach { minecraftVersions.add(it) }
+        client = true
+        server = false
+        requires("syrup-library")
+    }
+    modrinth {
+        projectId = property("publish.modrinth").toString()
+        accessToken = modrinthToken
+        compatibleVersions.forEach { minecraftVersions.add(it) }
+        environment = CLIENT_ONLY
+        requires("syrup-library")
+    }
+}

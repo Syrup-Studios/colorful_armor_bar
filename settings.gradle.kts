@@ -1,6 +1,5 @@
 pluginManagement {
     repositories {
-        mavenLocal()
         mavenCentral()
         gradlePluginPortal()
         maven("https://maven.kikugie.dev/releases") { name = "KikuGie Releases" }
@@ -12,8 +11,8 @@ pluginManagement {
 }
 
 plugins {
-    id("dev.kikugie.stonecutter") version "0.7.10"
-    id("dev.kikugie.loom-back-compat") version "0.3"
+    id("dev.kikugie.stonecutter") version "0.9.8"
+    id("dev.kikugie.loom-back-compat") version "0.4.2"
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
@@ -21,20 +20,15 @@ rootProject.name = "colorful_armor_bar"
 
 stonecutter {
     create(rootProject) {
-        fun target(version: String, loader: String, buildscript: String = loader) {
-            version("$version-$loader", version).buildscript = "build.$buildscript.gradle.kts"
+        fun match(project: String, vararg loaders: String) {
+            for (loader in loaders) version("$project-$loader", project).buildscript("build.$loader.gradle.kts")
         }
 
-        target("1.20.1", "fabric")
-        target("1.20.1", "forge")
-        target("1.21.1", "fabric")
-        target("1.21.1", "neoforge")
-        target("1.21.11", "fabric")
-        target("1.21.11", "neoforge")
-        target("26.2", "fabric")
-        target("26.2", "neoforge")
-        target("26.3", "fabric")
-        target("26.3", "neoforge")
+        match("1.20.1", "fabric", "forge")
+        match("1.21.1", "fabric", "neoforge")
+        match("1.21.11", "fabric", "neoforge")
+        match("26.2", "fabric", "neoforge")
+        match("26.3", "fabric", "neoforge")
 
         vcsVersion = "1.20.1-fabric"
     }
