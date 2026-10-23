@@ -10,7 +10,11 @@ val neoForgeVersion = property("deps.neoforge_version") as String
 val modVersion = property("mod.version") as String
 val neoForgeMinecraftRange = property("mod.neoforge_mc_range").toString()
 val modernHud = stonecutter.eval(stonecutter.current.version, ">=1.21.11")
-val targetJavaVersion = if (stonecutter.eval(stonecutter.current.version, ">=26")) 25 else 21
+val targetJavaVersion = when {
+    stonecutter.eval(minecraftVersion, ">=26.1") -> 25
+    stonecutter.eval(minecraftVersion, ">=1.20.5") -> 21
+    else -> 17
+}
 val syrupLibraryVersion = "${property("deps.syrup_library")}+$minecraftVersion-neoforge"
 val syrupLibraryCoordinate = "net.syrupstudios:syrup_library:$syrupLibraryVersion"
 
@@ -19,7 +23,7 @@ group = property("mod.group") as String
 base.archivesName = property("mod.id") as String
 
 repositories {
-    maven("https://maven.syrupstudios.net/releases/")
+    maven(property("mod.maven_url").toString())
 }
 
 tasks.withType<AbstractArchiveTask>().configureEach {
@@ -78,6 +82,8 @@ tasks.processResources {
         "authors" to project.property("mod.authors"),
         "license" to project.property("mod.license"),
         "syrupLibrary" to project.property("deps.syrup_library"),
+        "java" to "JAVA_$targetJavaVersion",
+        "refmapLine" to "",
         "mixinConfig" to if (modernHud) "" else "[[mixins]]\nconfig=\"${project.property("mod.id")}.mixins.json\""
     )
     inputs.properties(props)
@@ -87,7 +93,7 @@ tasks.processResources {
         exclude("*.mixins.json")
     } else {
         filesMatching("*.mixins.json") {
-            expand("java" to "JAVA_21", "refmapLine" to "")
+            expand(props)
         }
     }
     exclude("fabric.mod.json", "META-INF/mods.toml")
@@ -123,7 +129,7 @@ publishing {
     repositories {
         maven {
             name = "syrupStudios"
-            url = uri("https://maven.syrupstudios.net/releases/")
+            url = uri(property("mod.maven_url").toString())
             credentials(PasswordCredentials::class)
         }
     }

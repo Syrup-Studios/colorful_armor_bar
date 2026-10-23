@@ -1,11 +1,11 @@
 plugins {
     id("dev.kikugie.stonecutter")
-    id("net.neoforged.moddev") version "2.0.147" apply false
-    id("net.neoforged.moddev.legacyforge") version "2.0.137" apply false
-    id("me.modmuss50.mod-publish-plugin") version "2.2.0" apply false
+    id("net.neoforged.moddev") version "2.0.148" apply false
+    id("net.neoforged.moddev.legacyforge") version "2.0.148" apply false
+    id("me.modmuss50.mod-publish-plugin") version "2.2.1" apply false
 }
 
-stonecutter active "26.3-fabric"
+stonecutter active "1.21.1-fabric"
 
 stonecutter.handlers {
     inherit("json5", "json")

@@ -12,11 +12,15 @@ pluginManagement {
 
 plugins {
     id("dev.kikugie.stonecutter") version "0.9.8"
-    id("dev.kikugie.loom-back-compat") version "0.4.2"
+    id("dev.kikugie.loom-back-compat") version "0.4.3"
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-rootProject.name = "colorful_armor_bar"
+rootProject.name = extensions.extraProperties.get("mod.id").toString()
+val loomVersion = extensions.extraProperties.get("loomx.loom_version").toString()
+gradle.beforeProject {
+    extensions.extraProperties.set("loomx.loom_version", loomVersion)
+}
 
 stonecutter {
     create(rootProject) {
@@ -29,7 +33,6 @@ stonecutter {
         match("1.21.11", "fabric", "neoforge")
         match("26.2", "fabric", "neoforge")
         match("26.3", "fabric", "neoforge")
-
         vcsVersion = "1.20.1-fabric"
     }
 }

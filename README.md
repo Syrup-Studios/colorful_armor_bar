@@ -1,17 +1,17 @@
 # Colorful Armor Bar
 
-Tired of Netherite, Diamond, and Leather looking exactly the same on your HUD? **Colorful Armor Bar** is a lightweight, client-side mod that colors your armor bar icons based on the exact gear you're wearing. 
+**Colorful Armor Bar** is a client-side mod that colors armor bar icons based on the armor you wear.
 
 ## How it Works
-The project is heavily inspired by [*Detail Armor Bar*](https://modrinth.com/mod/detail-armor-bar), but under the hood, this mod takes a completely data-driven approach. 
+The project is inspired by [*Detail Armor Bar*](https://modrinth.com/mod/detail-armor-bar). It uses resource packs to provide armor textures.
 
-Instead of hardcoding compatibility or waiting for backend code updates, everything is driven by resource packs. Out of the box, the mod dynamically scans for textures mapped to your armor materials. If a mod adds a new armor tier, anyone can easily add flawless visual support for it with a resource pack—no code changes required.
+The mod scans resource packs for textures that match armor materials. A resource pack can add textures for armor from other mods without code changes.
 
 ## Features
-* **Mix-and-Match (Split Rendering):** If you're wearing a diamond chestplate with netherite boots, the mod automatically splits your armor shield icons to accurately show both materials at once.
+* **Mix-and-Match (Split Rendering):** The mod splits armor icons to show different armor materials in the same icon.
 * **Armor Trims:** Trimmed armor adds a small trim mark to its armor points. The mark uses the trim material's color, including colors supplied by other mods.
-* **100% Client-Side:** Safe to use on any public server or multiplayer network. You don't need it installed on the server for it to work.
-* **Fully Customizable:** Don't like the default colors? You can easily change the icons or add support for modded armor using resource packs.
+* **Client-Side:** The mod does not need to be installed on the server.
+* **Resource Pack Support:** Resource packs can change icons and add textures for modded armor.
 
 Install the matching **Syrup Library** version separately. It is required by
 Colorful Armor Bar and is no longer bundled with the mod.
@@ -36,7 +36,7 @@ saved in the screen apply immediately.
 ---
 
 ## For Resource Pack Creators & Mod Developers
-Supporting a custom armor set is incredibly straightforward. All you need to do is drop a `.png` texture into the folder matching the armor's material name.
+To add support for an armor set, add a `.png` texture to the folder for its armor material.
 
 The mod automatically checks this path structure:
 `assets/<mod_id_or_namespace>/textures/armoricon/<material_name>.png`
@@ -60,7 +60,7 @@ Minecraft's `textures/trims/items/chestplate_trim.png`. Trim textures can use an
 size. Their alpha channel defines the mark, and the mod applies the trim material
 color at run time.
 
-> **Note:** If the mod can't find a custom texture for an armor material, it safely falls back to a clean, default iron-style template.
+> **Note:** If the mod cannot find a texture for an armor material, it uses the default iron-style texture.
 
 ## Supported build targets
 

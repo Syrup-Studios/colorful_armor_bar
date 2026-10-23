@@ -11,14 +11,14 @@ val fabricMinecraftRange = property("mod.fabric_mc_range").toString()
 val syrupLibraryVersion = "${property("deps.syrup_library")}+$minecraftVersion-fabric"
 val syrupLibraryCoordinate = "net.syrupstudios:syrup_library:$syrupLibraryVersion"
 val targetJavaVersion = when {
-    stonecutter.eval(stonecutter.current.version, ">=26") -> 25
-    stonecutter.eval(stonecutter.current.version, ">=1.20.5") -> 21
+    stonecutter.eval(minecraftVersion, ">=26.1") -> 25
+    stonecutter.eval(minecraftVersion, ">=1.20.5") -> 21
     else -> 17
 }
 val requiredJava = JavaVersion.toVersion(targetJavaVersion)
 
 repositories {
-    maven("https://maven.syrupstudios.net/releases/")
+    maven(property("mod.maven_url").toString())
 }
 
 version = modVersion
@@ -30,15 +30,36 @@ tasks.withType<AbstractArchiveTask>().configureEach {
 }
 
 dependencies {
+    // Let the selected Fabric API define module versions instead of a transitive BOM.
+    components {
+        withModule("net.fabricmc.fabric-api:fabric-api-bom") {
+            allVariants {
+                withDependencyConstraints {
+                    filter { it.group == "net.fabricmc.fabric-api" }.forEach { constraint ->
+                        val version = constraint.versionConstraint.requiredVersion
+                        if (version.isNotEmpty()) {
+                            constraint.version {
+                                require("")
+                                prefer(version)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     minecraft("com.mojang:minecraft:$minecraftVersion")
     loomx.applyMojangMappings()
     modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
-    modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric_api")}")
+    modImplementation("net.fabricmc.fabric-api:fabric-api") {
+        version { strictly(property("deps.fabric_api").toString()) }
+    }
     modImplementation(syrupLibraryCoordinate)
 }
 
 loom {
-    fabricModJsonPath = rootProject.file("src/main/resources/fabric.mod.json")
+    fabricModJsonPath = layout.buildDirectory.file("generated/stonecutter/main/resources/fabric.mod.json").get().asFile
     decompilerOptions.named("vineflower") {
         options.put("mark-corresponding-synthetics", "1")
     }
@@ -92,6 +113,10 @@ tasks.processResources {
 
     inputs.properties(props)
     exclude("META-INF/mods.toml", "META-INF/neoforge.mods.toml")
+    from(layout.buildDirectory.dir("generated/stonecutter/main/resources")) {
+        include("fabric.mod.json")
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
     filesMatching("fabric.mod.json") { expand(props) }
     filesMatching("pack.mcmeta") { expand(props) }
 
@@ -140,7 +165,7 @@ publishing {
     repositories {
         maven {
             name = "syrupStudios"
-            url = uri("https://maven.syrupstudios.net/releases/")
+            url = uri(property("mod.maven_url").toString())
             credentials(PasswordCredentials::class)
         }
     }

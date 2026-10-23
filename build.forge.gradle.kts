@@ -9,7 +9,11 @@ val mcVersion = stonecutter.current.version
 val forgeVersion = property("deps.forge_version") as String
 val modVersion = property("mod.version") as String
 val forgeMinecraftRange = property("mod.forge_mc_range").toString()
-val targetJavaVersion = 17
+val targetJavaVersion = when {
+    stonecutter.eval(mcVersion, ">=26.1") -> 25
+    stonecutter.eval(mcVersion, ">=1.20.5") -> 21
+    else -> 17
+}
 val syrupLibraryVersion = "${property("deps.syrup_library")}+$mcVersion-forge"
 val syrupLibraryCoordinate = "net.syrupstudios:syrup_library:$syrupLibraryVersion"
 
@@ -18,7 +22,7 @@ group = property("mod.group") as String
 base.archivesName = property("mod.id") as String
 
 repositories {
-    maven("https://maven.syrupstudios.net/releases/")
+    maven(property("mod.maven_url").toString())
 }
 
 tasks.withType<AbstractArchiveTask>().configureEach {
@@ -64,8 +68,8 @@ java {
         vendor = JvmVendorSpec.ADOPTIUM
         languageVersion = JavaLanguageVersion.of(targetJavaVersion)
     }
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.toVersion(targetJavaVersion)
+    targetCompatibility = JavaVersion.toVersion(targetJavaVersion)
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -122,7 +126,7 @@ publishing {
     repositories {
         maven {
             name = "syrupStudios"
-            url = uri("https://maven.syrupstudios.net/releases/")
+            url = uri(property("mod.maven_url").toString())
             credentials(PasswordCredentials::class)
         }
     }
