@@ -14,13 +14,6 @@ public final class ColorfulArmorBarConfig {
             false,
             "Combine armor with the same icon, glint state, and trim appearance; show the largest group first.");
 
-    public static final ConfigValue<Integer> GLINT_OPACITY = SPEC.integer(
-            "glint_opacity",
-            30,
-            0,
-            100,
-            "Opacity of the enchantment glint as a percentage. Set to 0 to disable it.");
-
     private ColorfulArmorBarConfig() {
     }
 

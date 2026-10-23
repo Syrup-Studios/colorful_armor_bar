@@ -191,7 +191,7 @@ public final class ArmorBarRenderer {
             return;
         }
 
-        float opacity = ColorfulArmorBarConfig.GLINT_OPACITY.get() / 100.0F;
+        float opacity = Minecraft.getInstance().options.glintStrength().get().floatValue();
         if (opacity <= 0.0F) {
             return;
         }
@@ -207,7 +207,8 @@ public final class ArmorBarRenderer {
         guiGraphics.setColor(1.0F, 1.0F, 1.0F, opacity);
         //?}
 
-        int phase = (int) ((System.currentTimeMillis() / 40L) % GLINT_SCROLL_PERIOD);
+        double glintSpeed = Minecraft.getInstance().options.glintSpeed().get();
+        int phase = (int) ((System.currentTimeMillis() / 40.0 * glintSpeed) % GLINT_SCROLL_PERIOD);
         for (GlintSegment segment : segments) {
             for (int row = 0; row < 9; row++) {
                 int column = 0;

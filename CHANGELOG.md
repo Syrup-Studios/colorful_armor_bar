@@ -1,13 +1,4 @@
-# Changelog
+## 1.0.3
 
-## 1.0.2
-
-- Add Minecraft 26.3 support for Fabric and NeoForge.
-- Update the required Syrup Library dependency to 0.5.0. Install it separately.
-- Improve armor trim rendering and texture caching.
-
-## 1.0.1
-
-- Align the Stonecutter build with the supported Fabric, Forge, and NeoForge targets.
-- Add shared client and server development run directories and generated Fabric run configurations.
-- Add Maven, CurseForge, and Modrinth publishing configuration from central Stonecutter metadata.
+- Make the armor-bar enchantment glint follow Minecraft's Accessibility settings for glint speed and strength. Remove the old `glint_opacity` config option.
+- Fixed the mod just not working for Fabric 1.21.1.
