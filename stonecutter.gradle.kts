@@ -19,13 +19,6 @@ stonecutter {
 
         replacements {
             string {
-                direction = eval(current.version, "<1.21.11")
-                replace(
-                    "\"depends\": {",
-                    "\"mixins\": [\n\t\t\"${'$'}{modId}.mixins.json\"\n\t],\n\t\"depends\": {"
-                )
-            }
-            string {
                 direction = eval(current.version, ">=1.21.11-rc2")
                 replace("ResourceLocation", "Identifier")
             }

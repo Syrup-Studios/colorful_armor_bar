@@ -59,7 +59,7 @@ dependencies {
 }
 
 loom {
-    fabricModJsonPath = layout.buildDirectory.file("generated/stonecutter/main/resources/fabric.mod.json").get().asFile
+    fabricModJsonPath = rootProject.file("src/main/resources/fabric.mod.json")
     decompilerOptions.named("vineflower") {
         options.put("mark-corresponding-synthetics", "1")
     }
@@ -113,11 +113,14 @@ tasks.processResources {
 
     inputs.properties(props)
     exclude("META-INF/mods.toml", "META-INF/neoforge.mods.toml")
-    from(layout.buildDirectory.dir("generated/stonecutter/main/resources")) {
-        include("fabric.mod.json")
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    if (modernHud) {
+        filesMatching("fabric.mod.json") {
+            expand(props)
+            filter { line -> if (line.contains("\"mixins\": [")) "" else line }
+        }
+    } else {
+        filesMatching("fabric.mod.json") { expand(props) }
     }
-    filesMatching("fabric.mod.json") { expand(props) }
     filesMatching("pack.mcmeta") { expand(props) }
 
     if (modernHud) {

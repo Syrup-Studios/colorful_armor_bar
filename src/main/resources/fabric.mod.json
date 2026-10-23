@@ -1,4 +1,5 @@
 {
+	"mixins": ["${modId}.mixins.json"],
 	"schemaVersion": 1,
 	"id": "${modId}",
 	"version": "${version}",

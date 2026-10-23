@@ -1,7 +1,30 @@
 package net.syrupstudios.colorfularmorbar;
 
-//? if <1.21.11
+//? if >=1.21.11 {
+/*import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+//? if <26.2 {
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.vertex.VertexFormat;
+//?} elif <26.3 {
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.client.renderer.BindGroupLayouts;
+//?} else {
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.client.renderer.BindGroupLayouts;
+//?}
+*///?} else {
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.platform.GlStateManager;
+//?}
 import net.minecraft.resources.ResourceLocation;
 //? if >=1.21.11 {
 /*import net.minecraft.client.renderer.RenderPipelines;
@@ -28,6 +51,47 @@ public final class ArmorBarRenderer {
     private static final int GLINT_TEXTURE_SIZE = 128;
     private static final int GLINT_TEXTURE_SCALE = 4;
     private static final int GLINT_SCROLL_PERIOD = 64;
+
+//? if >=1.21.11 {
+/*    //? if <26.2 {
+    private static final RenderPipeline GLINT_PIPELINE = RenderPipeline.builder()
+            .withLocation("pipeline/colorful_armor_bar/gui_glint")
+            .withUniform("DynamicTransforms", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
+            .withUniform("Projection", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
+            .withVertexShader("core/position_tex_color")
+            .withFragmentShader("core/position_tex_color")
+            .withSampler("Sampler0")
+            .withBlend(BlendFunction.GLINT)
+            .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
+            .withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.NO_DEPTH_TEST)
+            .build();
+    //?} elif <26.3 {
+    private static final RenderPipeline GLINT_PIPELINE = RenderPipeline.builder()
+            .withLocation("pipeline/colorful_armor_bar/gui_glint")
+            .withBindGroupLayout(BindGroupLayouts.GLOBALS)
+            .withBindGroupLayout(BindGroupLayouts.MATRICES_PROJECTION)
+            .withBindGroupLayout(BindGroupLayouts.SAMPLER0)
+            .withVertexShader("core/position_tex_color")
+            .withFragmentShader("core/position_tex_color")
+            .withColorTargetState(new ColorTargetState(BlendFunction.GLINT))
+            .withVertexBinding(0, DefaultVertexFormat.POSITION_TEX_COLOR)
+            .withPrimitiveTopology(PrimitiveTopology.QUADS)
+            .build();
+    //?} else {
+    private static final RenderPipeline GLINT_PIPELINE = RenderPipeline.builder()
+            .withLocation("pipeline/colorful_armor_bar/gui_glint")
+            .withBindGroupLayout(BindGroupLayouts.GLOBALS)
+            .withBindGroupLayout(BindGroupLayouts.PROJECTION)
+            .withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
+            .withVertexShader("core/position_tex_color")
+            .withFragmentShader("core/position_tex_color")
+            .withBindGroupLayout(BindGroupLayouts.SAMPLER0)
+            .withColorTargetState(new ColorTargetState(BlendFunction.GLINT))
+            .withVertexBinding(0, DefaultVertexFormat.POSITION_TEX_COLOR)
+            .withPrimitiveTopology(PrimitiveTopology.QUADS)
+            .build();
+    //?}
+*///?}
 
     private static final EquipmentSlot[] ARMOR_SLOTS = {
             EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD
@@ -195,16 +259,18 @@ public final class ArmorBarRenderer {
         if (opacity <= 0.0F) {
             return;
         }
-        int glintColor = Math.round(opacity * 255.0F) << 24 | 0xFFFFFF;
+        int glintTint = Math.round((float) Math.sqrt(opacity) * 255.0F);
+        int glintColor = 0xFF000000 | glintTint << 16 | glintTint << 8 | glintTint;
 
-        // Older GUI renderers use a global alpha. Flush around it so the alpha
-        // only applies to the vanilla glint texture. The solid trim pass can
-        // leave a non-alpha blend function active, so restore it first.
+        // Older GUI renderers use global color and blend state. Flush around the
+        // glint pass so those changes only affect the glint texture.
         //? if <1.21.11 {
         guiGraphics.flush();
         RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        guiGraphics.setColor(1.0F, 1.0F, 1.0F, opacity);
+        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_COLOR, GlStateManager.DestFactor.ONE,
+                GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+        float tint = glintTint / 255.0F;
+        guiGraphics.setColor(tint, tint, tint, 1.0F);
         //?}
 
         double glintSpeed = Minecraft.getInstance().options.glintSpeed().get();
@@ -237,6 +303,7 @@ public final class ArmorBarRenderer {
         //? if <1.21.11 {
         guiGraphics.flush();
         guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.defaultBlendFunc();
         //?}
     }
 
@@ -255,7 +322,8 @@ public final class ArmorBarRenderer {
 
     private static void blitGlint(GuiGraphics guiGraphics, int x, int y, int u, int v, int width, int color) {
         //? if >=1.21.11 {
-        /*guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENCHANTED_GLINT_TEXTURE, x, y, u, v, width, 1,
+        /*
+        guiGraphics.blit(GLINT_PIPELINE, ENCHANTED_GLINT_TEXTURE, x, y, u, v, width, 1,
                 width * GLINT_TEXTURE_SCALE, GLINT_TEXTURE_SCALE, GLINT_TEXTURE_SIZE, GLINT_TEXTURE_SIZE, color);
         *///?} else {
         guiGraphics.blit(ENCHANTED_GLINT_TEXTURE, x, y, width, 1, (float) u, (float) v,
