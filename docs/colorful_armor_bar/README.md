@@ -17,6 +17,18 @@ section. The group with the most armor points is shown first. Equal groups keep
 their worn-slot order. The default value is `false`, which keeps the armor bar
 in worn-slot order.
 
+The following effects are enabled by default:
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `armor_icon_animation` | `true` | Wipe animation when armor icons change. |
+| `damage_pulse` | `true` | Red pulse when armor takes damage. |
+| `repair_pulse` | `true` | Cyan pulse when armor is repaired, including by Mending. |
+| `trim_glow` | `true` | Pulsing highlight on amethyst, diamond, and emerald trims. |
+
+Leather armor always uses its dye color. Trim material color also always
+appears, even when `trim_glow` is disabled.
+
 Use Minecraft's **Accessibility** settings to control enchantment glint speed
 and strength. A glint speed of `0%` stops the armor-bar glint movement. A glint
 strength of `0%` hides the glint.
@@ -54,6 +66,8 @@ If a pattern-specific texture is missing, the mod checks
 Minecraft's `textures/trims/items/chestplate_trim.png`. Trim textures can use
 any size. Their alpha channel defines the mark, and the mod applies the trim
 material color at run time.
+Amethyst, diamond, and emerald trims also receive a subtle pulsing white
+highlight inside the existing trim and armor masks.
 
 If the mod cannot find a texture for an armor material, it uses the default
 iron-style texture.

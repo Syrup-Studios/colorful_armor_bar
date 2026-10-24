@@ -34,7 +34,6 @@ public class ForgeEntrypoint {
             Minecraft minecraft = Minecraft.getInstance();
             if (event.getOverlay() != VanillaGuiOverlay.ARMOR_LEVEL.type()
                     || minecraft.player == null
-                    || minecraft.player.getArmorValue() <= 0
                     || minecraft.options.hideGui
                     || !(minecraft.gui instanceof ForgeGui forgeGui)
                     || !forgeGui.shouldDrawSurvivalElements()) {
@@ -43,8 +42,9 @@ public class ForgeEntrypoint {
 
             event.setCanceled(true);
             forgeGui.setupOverlayRenderState(true, false);
-            ArmorBarRenderer.render(event.getGuiGraphics(), event.getWindow().getGuiScaledHeight() - forgeGui.leftHeight);
-            forgeGui.leftHeight += 10;
+            if (ArmorBarRenderer.render(event.getGuiGraphics(), event.getWindow().getGuiScaledHeight() - forgeGui.leftHeight)) {
+                forgeGui.leftHeight += 10;
+            }
         }
     }
 }

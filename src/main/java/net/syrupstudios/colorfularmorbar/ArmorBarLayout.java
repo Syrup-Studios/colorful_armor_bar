@@ -13,7 +13,10 @@ public final class ArmorBarLayout {
     private ArmorBarLayout() {
     }
 
-    public record Contribution<T>(T texture, int points) {
+    public record Contribution<T>(T texture, int points, Object groupKey) {
+        public Contribution(T texture, int points) {
+            this(texture, points, texture);
+        }
     }
 
     public static <T> List<T> build(
@@ -49,16 +52,19 @@ public final class ArmorBarLayout {
             return contributions;
         }
 
-        Map<T, Integer> pointsByTexture = new LinkedHashMap<>();
+        Map<Object, List<Contribution<T>>> byGroup = new LinkedHashMap<>();
         for (Contribution<T> contribution : contributions) {
             if (contribution.texture() != null && contribution.points() > 0) {
-                pointsByTexture.merge(contribution.texture(), contribution.points(), Integer::sum);
+                byGroup.computeIfAbsent(contribution.groupKey(), key -> new ArrayList<>()).add(contribution);
             }
         }
 
-        List<Contribution<T>> grouped = new ArrayList<>(pointsByTexture.size());
-        pointsByTexture.forEach((texture, points) -> grouped.add(new Contribution<>(texture, points)));
-        grouped.sort((left, right) -> Integer.compare(right.points(), left.points()));
+        List<List<Contribution<T>>> groups = new ArrayList<>(byGroup.values());
+        groups.sort((left, right) -> Integer.compare(
+                right.stream().mapToInt(Contribution::points).sum(),
+                left.stream().mapToInt(Contribution::points).sum()));
+        List<Contribution<T>> grouped = new ArrayList<>(contributions.size());
+        groups.forEach(grouped::addAll);
         return grouped;
     }
 }

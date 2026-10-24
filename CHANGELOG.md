@@ -1,5 +1,6 @@
-## 1.0.3
+## 1.1.0
 
-- Make the armor-bar enchantment glint follow Minecraft's Accessibility settings for glint speed and strength. Remove the old `glint_opacity` config option.
-- Fixed the mod just not working for Fabric 1.21.1.
-- Prevent enchanted armor icons from appearing too dark.
+- Tint leather armor icons with their dye color and highlight trims.
+- Wipe animation for armor icons when armor is equipped or removed.
+- Pulse icons for armor that takes damage or is repaired by mending.
+- Add config options for icon animation, damage pulses, repair pulses, and trim glow.

@@ -47,12 +47,13 @@ public class NeoForgeEntrypoint {
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.replaceLayer(VanillaGuiLayers.ARMOR_LEVEL, (graphics, deltaTracker) -> {
             Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player == null || minecraft.player.getArmorValue() <= 0) {
+            if (minecraft.player == null) {
                 return;
             }
             int top = graphics.guiHeight() - minecraft.gui.hud.leftHeight;
-            ArmorBarRenderer.render(graphics, top);
-            minecraft.gui.hud.leftHeight += 10;
+            if (ArmorBarRenderer.render(graphics, top)) {
+                minecraft.gui.hud.leftHeight += 10;
+            }
         });
     }
     ^///?} elif >=1.21.11 {
@@ -60,12 +61,13 @@ public class NeoForgeEntrypoint {
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.replaceLayer(VanillaGuiLayers.ARMOR_LEVEL, (graphics, deltaTracker) -> {
             Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player == null || minecraft.player.getArmorValue() <= 0) {
+            if (minecraft.player == null) {
                 return;
             }
             int top = graphics.guiHeight() - minecraft.gui.leftHeight;
-            ArmorBarRenderer.render(graphics, top);
-            minecraft.gui.leftHeight += 10;
+            if (ArmorBarRenderer.render(graphics, top)) {
+                minecraft.gui.leftHeight += 10;
+            }
         });
     }
     ^///?}

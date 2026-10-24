@@ -36,14 +36,19 @@ public class InGameHudArmorMixin {
 
     @Inject(method = "renderArmorLevel", at = @At("HEAD"))
     private void colorfulArmorBar$renderNeoForgeArmor(GuiGraphics guiGraphics, CallbackInfo ci) {
-        ArmorBarRenderer.render(guiGraphics, guiGraphics.guiHeight() - leftHeight);
+        Minecraft minecraft = Minecraft.getInstance();
+        Player player = minecraft.player;
+        if (ArmorBarRenderer.render(guiGraphics, guiGraphics.guiHeight() - leftHeight)
+                && player != null && player.getArmorValue() <= 0) {
+            leftHeight += 10;
+        }
     }
     *///?} else {
     @Inject(method = "renderPlayerHealth", at = @At("HEAD"))
     private void colorfulArmorBar$renderVanillaArmor(GuiGraphics guiGraphics, CallbackInfo ci) {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
-        if (player == null || player.getArmorValue() <= 0) {
+        if (player == null) {
             return;
         }
 

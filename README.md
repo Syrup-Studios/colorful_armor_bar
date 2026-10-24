@@ -6,7 +6,8 @@
 
 - Mix-and-match armor icons for different armor materials.
 - Leather icons show the armor's dye color.
-- Trim marks colored by the trim material.
+- Trim marks use the trim material's color; bright materials pulse.
+- Armor icon changes animate, and damage or repairs show a brief pulse.
 - Client-side; the server does not need the mod.
 
 Requires a matching **Syrup Library** version.

@@ -65,10 +65,11 @@ public class FabricEntrypoint implements ClientModInitializer {
     /*private static void registerModernFabricHud() {
         HudElementRegistry.replaceElement(VanillaHudElements.ARMOR_BAR, original -> (graphics, tickCounter) -> {
             Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player == null || minecraft.player.getArmorValue() <= 0) {
+            if (minecraft.player == null) {
                 return;
             }
-            int top = graphics.guiHeight() - HudStatusBarHeightRegistry.getHeight(VanillaHudElements.ARMOR_BAR);
+            int top = graphics.guiHeight() - HudStatusBarHeightRegistry.getHeight(VanillaHudElements.ARMOR_BAR)
+                    - (minecraft.player.getArmorValue() <= 0 ? 10 : 0);
             ArmorBarRenderer.render(graphics, top);
         });
     }

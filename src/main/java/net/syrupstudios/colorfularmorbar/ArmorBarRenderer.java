@@ -61,6 +61,8 @@ public final class ArmorBarRenderer {
     private static final int GLINT_TEXTURE_SIZE = 128;
     private static final int GLINT_TEXTURE_SCALE = 4;
     private static final int GLINT_SCROLL_PERIOD = 64;
+    private static final long TRANSITION_DURATION_NANOS = 220_000_000L;
+    private static final long STALE_ARMOR_VALUE_TIMEOUT_NANOS = 1_000_000_000L;
 
 //? if >=1.21.11 {
 /*    //? if <26.2 {
@@ -119,16 +121,32 @@ public final class ArmorBarRenderer {
     }
 
     private record ArmorPoint(ResourceLocation texture, boolean enchanted, boolean[] alphaMask, Integer leatherColor, Integer trimColor,
-                              boolean[] trimMask) {
+                              boolean[] trimMask, boolean glowingTrim, EquipmentSlot slot) {
+        private ArmorPoint visualKey() {
+            return new ArmorPoint(texture, enchanted, alphaMask, leatherColor, trimColor, trimMask, glowingTrim, null);
+        }
     }
 
-    private record GlintSegment(boolean[] alphaMask, int x, int u, int width) {
+    private record GlintSegment(boolean[] alphaMask, int x, int u, int width, int clipStart, int clipEnd) {
     }
-    public static void render(GuiGraphics guiGraphics, int armorTop) {
+    private static Player lastPlayer;
+    private static List<ArmorPoint> previousPoints;
+    private static List<ArmorPoint> currentPoints;
+    private static int effectiveArmorTotal;
+    private static int lastContributionTotal;
+    private static long staleArmorValueStart;
+    private static long transitionStart;
+
+    public static boolean render(GuiGraphics guiGraphics, int armorTop) {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
-        if (player == null || player.getArmorValue() <= 0) {
-            return;
+        ArmorBarFeedback.update(player);
+        if (player == null) {
+            lastPlayer = null;
+            previousPoints = currentPoints = null;
+            effectiveArmorTotal = lastContributionTotal = 0;
+            staleArmorValueStart = 0L;
+            return false;
         }
 
         List<ArmorBarLayout.Contribution<ArmorPoint>> contributions = new ArrayList<>();
@@ -147,23 +165,76 @@ public final class ArmorBarRenderer {
             }
             int points = Math.max(0, (int)Math.round(modifiers.compute(Attributes.ARMOR, 0.0, slot)));
             if (points > 0) {
+                ArmorPoint point = createArmorPoint(stack, minecraft, slot);
                 contributions.add(new ArmorBarLayout.Contribution<>(
-                        createArmorPoint(stack, minecraft),
-                        points));
+                        point, points, point.visualKey()));
             }
             *///?} else {
             if (stack.getItem() instanceof ArmorItem armorItem) {
+                ArmorPoint point = createArmorPoint(stack, minecraft, slot);
                 contributions.add(new ArmorBarLayout.Contribution<>(
-                        createArmorPoint(stack, minecraft),
-                        armorItem.getDefense()));
+                        point, armorItem.getDefense(), point.visualKey()));
             }
             //?}
         }
 
+        int rawArmorTotal = Math.max(0, player.getArmorValue());
+        int contributedPoints = contributions.stream().mapToInt(contribution -> contribution.points()).sum();
+        long now = System.nanoTime();
+        boolean playerChanged = player != lastPlayer || currentPoints == null;
+        if (playerChanged) {
+            effectiveArmorTotal = rawArmorTotal;
+            lastContributionTotal = contributedPoints;
+            staleArmorValueStart = 0L;
+        } else {
+            int contributionDelta = contributedPoints - lastContributionTotal;
+            if (staleArmorValueStart != 0L) {
+                effectiveArmorTotal = Math.max(0, effectiveArmorTotal + contributionDelta);
+                if (rawArmorTotal <= effectiveArmorTotal
+                        || now - staleArmorValueStart >= STALE_ARMOR_VALUE_TIMEOUT_NANOS) {
+                    effectiveArmorTotal = rawArmorTotal;
+                    staleArmorValueStart = 0L;
+                }
+            } else if (contributionDelta < 0) {
+                int expectedArmorTotal = Math.max(0, effectiveArmorTotal + contributionDelta);
+                if (rawArmorTotal > expectedArmorTotal) {
+                    // Equipment updates can arrive before the armor attribute total.
+                    effectiveArmorTotal = expectedArmorTotal;
+                    staleArmorValueStart = now;
+                } else {
+                    effectiveArmorTotal = rawArmorTotal;
+                }
+            } else {
+                effectiveArmorTotal = rawArmorTotal;
+            }
+            lastContributionTotal = contributedPoints;
+        }
         List<ArmorPoint> points = ArmorBarLayout.build(
-                player.getArmorValue(), contributions,
-                new ArmorPoint(ArmorBarRegistry.FALLBACK_TEXTURE, false, null, null, null, null),
+                effectiveArmorTotal, contributions,
+                new ArmorPoint(ArmorBarRegistry.FALLBACK_TEXTURE, false,
+                        ArmorBarRegistry.getAlphaMask(ArmorBarRegistry.FALLBACK_TEXTURE, minecraft.getResourceManager()),
+                        null, null, null, false, null),
                 ColorfulArmorBarConfig.GROUP_MATCHING_ARMOR.get());
+        List<ArmorPoint> renderPoints;
+        if (playerChanged || !ColorfulArmorBarConfig.ARMOR_ICON_ANIMATION.get()) {
+            lastPlayer = player;
+            previousPoints = currentPoints = points;
+            transitionStart = 0L;
+            renderPoints = points;
+        } else if (points.equals(currentPoints)) {
+            renderPoints = currentPoints;
+        } else {
+            previousPoints = currentPoints;
+            currentPoints = points;
+            transitionStart = now;
+            renderPoints = currentPoints;
+        }
+        float transition = transitionStart == 0L ? 1.0F
+                : Math.min(1.0F, (float) (now - transitionStart) / TRANSITION_DURATION_NANOS);
+        boolean animating = transition < 1.0F && previousPoints != currentPoints;
+        if (!animating && player.getArmorValue() <= 0) {
+            return false;
+        }
         List<GlintSegment> glintSegments = new ArrayList<>();
 
         int left = guiGraphics.guiWidth() / 2 - 91;
@@ -177,48 +248,76 @@ public final class ArmorBarRenderer {
         for (int j = 0; j < 10; j++) {
             int x = left + j * 8;
 
-            //? if >=1.21.11 {
-            /*guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, ARMOR_EMPTY_SPRITE, x, armorTop, 9, 9);
-            *///?} elif >=1.21 {
-            guiGraphics.blitSprite(ARMOR_EMPTY_SPRITE, x, armorTop, 9, 9);
-            //?} else {
-            /*guiGraphics.blit(VANILLA_GUI_ICONS, x, armorTop, 16, 9, 9, 9);
-            *///?}
+            ArmorPoint oldLeft = previousPoints.get(j * 2);
+            ArmorPoint oldRight = previousPoints.get(j * 2 + 1);
+            ArmorPoint newLeft = renderPoints.get(j * 2);
+            ArmorPoint newRight = renderPoints.get(j * 2 + 1);
+            if (!animating || (oldLeft == null ? newLeft == null : oldLeft.equals(newLeft))
+                    && (oldRight == null ? newRight == null : oldRight.equals(newRight))) {
+                drawIcon(guiGraphics, x, armorTop, newLeft, newRight, glintSegments, -1, -1);
+                continue;
+            }
 
-            ArmorPoint leftPoint = points.get(j * 2);
-            ArmorPoint rightPoint = points.get(j * 2 + 1);
-
-            if (leftPoint != null && leftPoint.equals(rightPoint)) {
-                blitPoint(guiGraphics, leftPoint, x, armorTop, 0, 9, glintSegments);
-            } else if (leftPoint != null && rightPoint == null) {
-                blitPoint(guiGraphics, leftPoint, x, armorTop, 9, 9, glintSegments);
-            } else {
-                if (leftPoint != null) {
-                    blitPoint(guiGraphics, leftPoint, x, armorTop, 0, 5, glintSegments);
+            int reveal = Math.round(9.0F * transition);
+            if (reveal < 9) {
+                guiGraphics.enableScissor(x + reveal, armorTop, x + 9, armorTop + 9);
+                try {
+                    drawIcon(guiGraphics, x, armorTop, oldLeft, oldRight, glintSegments, x + reveal, x + 9);
+                } finally {
+                    guiGraphics.disableScissor();
                 }
-                if (rightPoint != null) {
-                    blitPoint(guiGraphics, rightPoint, x + 5, armorTop, 5, 4, glintSegments);
+            }
+            if (reveal > 0) {
+                guiGraphics.enableScissor(x, armorTop, x + reveal, armorTop + 9);
+                try {
+                    drawIcon(guiGraphics, x, armorTop, newLeft, newRight, glintSegments, x, x + reveal);
+                } finally {
+                    guiGraphics.disableScissor();
                 }
             }
         }
 
         renderGlint(guiGraphics, glintSegments, armorTop);
+        return true;
     }
 
-    private static ArmorPoint createArmorPoint(ItemStack stack, Minecraft minecraft) {
+    private static void drawIcon(GuiGraphics guiGraphics, int x, int y, ArmorPoint leftPoint, ArmorPoint rightPoint,
+                                 List<GlintSegment> glintSegments, int clipStart, int clipEnd) {
+        //? if >=1.21.11 {
+        /*guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, ARMOR_EMPTY_SPRITE, x, y, 9, 9);
+        *///?} elif >=1.21 {
+        guiGraphics.blitSprite(ARMOR_EMPTY_SPRITE, x, y, 9, 9);
+        //?} else {
+        /*guiGraphics.blit(VANILLA_GUI_ICONS, x, y, 16, 9, 9, 9);
+        *///?}
+        if (leftPoint != null && leftPoint.equals(rightPoint)) {
+            blitPoint(guiGraphics, leftPoint, x, y, 0, 9, glintSegments, clipStart, clipEnd);
+        } else if (leftPoint != null && rightPoint == null) {
+            blitPoint(guiGraphics, leftPoint, x, y, 9, 9, glintSegments, clipStart, clipEnd);
+        } else {
+            if (leftPoint != null) {
+                blitPoint(guiGraphics, leftPoint, x, y, 0, 5, glintSegments, clipStart, clipEnd);
+            }
+            if (rightPoint != null) {
+                blitPoint(guiGraphics, rightPoint, x + 5, y, 5, 4, glintSegments, clipStart, clipEnd);
+            }
+        }
+    }
+
+    private static ArmorPoint createArmorPoint(ItemStack stack, Minecraft minecraft, EquipmentSlot slot) {
         var texture = ArmorBarRegistry.getTexture(stack, minecraft.getResourceManager());
         boolean enchanted = stack.hasFoil();
         ArmorTrim trim = getTrim(stack, minecraft);
-        boolean[] alphaMask = enchanted || trim != null
-                ? ArmorBarRegistry.getAlphaMask(texture, minecraft.getResourceManager())
-                : null;
+        boolean[] alphaMask = ArmorBarRegistry.getAlphaMask(texture, minecraft.getResourceManager());
         Integer leatherColor = getLeatherColor(stack);
         Integer trimColor = trim == null ? null : getTrimColor(trim);
         boolean[] trimMask = trim == null
                 ? null
                 : ArmorBarRegistry.getTrimAlphaMask(
                         trim.pattern().value().assetId(), minecraft.getResourceManager());
-        return new ArmorPoint(texture, enchanted, alphaMask, leatherColor, trimColor, trimMask);
+        String trimMaterial = trim == null ? "" : getTrimMaterialName(trim);
+        boolean glowingTrim = trimMaterial.equals("amethyst") || trimMaterial.equals("diamond") || trimMaterial.equals("emerald");
+        return new ArmorPoint(texture, enchanted, alphaMask, leatherColor, trimColor, trimMask, glowingTrim, slot);
     }
 
     private static Integer getLeatherColor(ItemStack stack) {
@@ -260,30 +359,48 @@ public final class ArmorBarRenderer {
         return color == null ? 0xFFFFFF : color.getValue();
     }
 
+    private static String getTrimMaterialName(ArmorTrim trim) {
+        //? if >=1.21.11-rc2 {
+        /*return trim.material().unwrapKey().map(key -> key.identifier().getPath()).orElse("");
+        *///?} else {
+        return trim.material().unwrapKey().map(key -> key.location().getPath()).orElse("");
+        //?}
+    }
+
     private static void blitPoint(GuiGraphics guiGraphics, ArmorPoint point, int x, int y, int u, int width,
-                                  List<GlintSegment> glintSegments) {
+                                  List<GlintSegment> glintSegments, int clipStart, int clipEnd) {
         if (point.leatherColor() != null) {
             blitTinted(guiGraphics, point.texture(), x, y, u, 0, width, 9, point.leatherColor());
         } else {
             blit(guiGraphics, point.texture(), x, y, u, 0, width, 9);
         }
         if (point.trimColor() != null) {
-            renderTrimIcon(guiGraphics, x, y, u, width, point.trimColor(), point.trimMask(), point.alphaMask());
+            renderTrimIcon(guiGraphics, x, y, u, width, point.trimColor(), point.trimMask(), point.alphaMask(),
+                    point.glowingTrim() && ColorfulArmorBarConfig.TRIM_GLOW.get());
         }
+        ArmorBarFeedback.render(guiGraphics, point.slot(), point.alphaMask(), x, y, u, width);
         if (point.enchanted()) {
-            glintSegments.add(new GlintSegment(point.alphaMask(), x, u, width));
+            int start = clipStart < 0 ? 0 : Math.max(0, clipStart - x);
+            int end = clipEnd < 0 ? width : Math.min(width, clipEnd - x);
+            if (start < end) {
+                glintSegments.add(new GlintSegment(point.alphaMask(), x, u, width, start, end));
+            }
         }
     }
 
     private static void renderTrimIcon(GuiGraphics guiGraphics, int x, int y, int u, int width, int trimColor,
-                                       boolean[] trimMask, boolean[] alphaMask) {
+                                       boolean[] trimMask, boolean[] alphaMask, boolean glowing) {
         int sourceX = u >= 9 ? 0 : u;
         int argb = 0xFF000000 | trimColor;
+        int glowAlpha = 0x20 + Math.round((float) (Math.sin(System.currentTimeMillis() / 500.0) + 1.0) * 16.0F);
         for (int row = 0; row < 9; row++) {
             for (int column = 0; column < width; column++) {
                 int iconX = sourceX + column;
                 if (trimMask[row * 9 + iconX] && alphaMask[row * 18 + u + column]) {
                     guiGraphics.fill(x + column, y + row, x + column + 1, y + row + 1, argb);
+                    if (glowing) {
+                        guiGraphics.fill(x + column, y + row, x + column + 1, y + row + 1, glowAlpha << 24 | 0xFFFFFF);
+                    }
                 }
             }
         }
@@ -347,7 +464,8 @@ public final class ArmorBarRenderer {
     }
 
     private static boolean isOpaque(GlintSegment segment, int column, int row) {
-        return segment.alphaMask()[row * 18 + segment.u() + column];
+        return column >= segment.clipStart() && column < segment.clipEnd()
+                && segment.alphaMask()[row * 18 + segment.u() + column];
     }
 
     private static void blit(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int u, int v,
