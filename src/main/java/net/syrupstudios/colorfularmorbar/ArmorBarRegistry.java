@@ -12,12 +12,17 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.ItemStack;
 
 import javax.imageio.ImageIO;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /** Version-neutral texture lookup and cache. Loader entrypoints own reload registration. */
 public final class ArmorBarRegistry {
@@ -27,18 +32,20 @@ public final class ArmorBarRegistry {
             "colorful_armor_bar", "textures/armoricon/trim.png");
     private static final ResourceLocation VANILLA_TRIM_TEXTURE = ResourceLocation.fromNamespaceAndPath(
             "minecraft", "textures/trims/items/chestplate_trim.png");
-    private static final Map<String, ResourceLocation> TEXTURE_CACHE = new HashMap<>();
+    private static final Map<String, TextureResult> TEXTURE_CACHE = new HashMap<>();
     private static final Map<ResourceLocation, boolean[]> ALPHA_MASK_CACHE = new HashMap<>();
     private static final Map<ResourceLocation, boolean[]> TRIM_ALPHA_MASK_CACHE = new HashMap<>();
+    private static final Map<ResourceLocation, Optional<Integer>> ITEM_COLOR_CACHE = new HashMap<>();
     //?} else {
     /*public static final ResourceLocation FALLBACK_TEXTURE = new ResourceLocation("minecraft", "textures/armoricon/iron.png");
     private static final ResourceLocation CUSTOM_TRIM_TEXTURE = new ResourceLocation(
             "colorful_armor_bar", "textures/armoricon/trim.png");
     private static final ResourceLocation VANILLA_TRIM_TEXTURE = new ResourceLocation(
             "minecraft", "textures/trims/items/chestplate_trim.png");
-    private static final Map<String, ResourceLocation> TEXTURE_CACHE = new HashMap<>();
+    private static final Map<String, TextureResult> TEXTURE_CACHE = new HashMap<>();
     private static final Map<ResourceLocation, boolean[]> ALPHA_MASK_CACHE = new HashMap<>();
     private static final Map<ResourceLocation, boolean[]> TRIM_ALPHA_MASK_CACHE = new HashMap<>();
+    private static final Map<ResourceLocation, Optional<Integer>> ITEM_COLOR_CACHE = new HashMap<>();
     *///?}
 
     private static final int ICON_WIDTH = 18;
@@ -50,8 +57,11 @@ public final class ArmorBarRegistry {
     private ArmorBarRegistry() {
     }
 
+    public record TextureResult(ResourceLocation texture, boolean fallback) {
+    }
+
     //? if >=1.21.11 {
-    /*public static ResourceLocation getTexture(ItemStack stack, ResourceManager resourceManager) {
+    /*public static TextureResult getTexture(ItemStack stack, ResourceManager resourceManager) {
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
         ResourceLocation assetId = equippable == null
@@ -59,7 +69,7 @@ public final class ArmorBarRegistry {
                 : equippable.assetId().map(key -> key.identifier()).orElse(null);
         String cacheKey = (assetId == null ? "" : assetId.toString()) + "|" + itemId;
 
-        ResourceLocation cached = TEXTURE_CACHE.get(cacheKey);
+        TextureResult cached = TEXTURE_CACHE.get(cacheKey);
         if (cached != null) {
             return cached;
         }
@@ -72,7 +82,7 @@ public final class ArmorBarRegistry {
             }
         }
 
-        ResourceLocation resolved = texture == null ? FALLBACK_TEXTURE : texture;
+        TextureResult resolved = new TextureResult(texture == null ? FALLBACK_TEXTURE : texture, texture == null);
         TEXTURE_CACHE.put(cacheKey, resolved);
         return resolved;
     }
@@ -83,9 +93,9 @@ public final class ArmorBarRegistry {
         return resourceManager.getResource(texture).isPresent() ? texture : null;
     }
     *///?} else {
-    public static ResourceLocation getTexture(ItemStack stack, ResourceManager resourceManager) {
+    public static TextureResult getTexture(ItemStack stack, ResourceManager resourceManager) {
         if (!(stack.getItem() instanceof ArmorItem armorItem)) {
-            return FALLBACK_TEXTURE;
+            return new TextureResult(FALLBACK_TEXTURE, true);
         }
 
         //? if >=1.21 {
@@ -108,7 +118,7 @@ public final class ArmorBarRegistry {
 
         // Key on the resolved namespace so equal material names from different mods don't collide.
         String cacheKey = namespace + ":" + pathName;
-        ResourceLocation cached = TEXTURE_CACHE.get(cacheKey);
+        TextureResult cached = TEXTURE_CACHE.get(cacheKey);
         if (cached != null) {
             return cached;
         }
@@ -118,11 +128,150 @@ public final class ArmorBarRegistry {
         //?} else {
         /*ResourceLocation texture = new ResourceLocation(namespace, "textures/armoricon/" + pathName + ".png");
         *///?}
-        ResourceLocation resolved = resourceManager.getResource(texture).isPresent() ? texture : FALLBACK_TEXTURE;
+        boolean fallback = resourceManager.getResource(texture).isEmpty();
+        TextureResult resolved = new TextureResult(fallback ? FALLBACK_TEXTURE : texture, fallback);
         TEXTURE_CACHE.put(cacheKey, resolved);
         return resolved;
     }
     //?}
+
+    public static Integer getItemColor(ItemStack stack, ResourceManager resourceManager) {
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Optional<Integer> cached = ITEM_COLOR_CACHE.get(itemId);
+        if (cached != null) {
+            return cached.orElse(null);
+        }
+        Integer color = null;
+        try {
+            var modelTextures = modelTextures(itemId, resourceManager);
+            if (!modelTextures.isEmpty()) {
+                color = averageTextureLayers(modelTextures, resourceManager);
+            }
+        } catch (IOException | RuntimeException ignored) { }
+        if (color == null) {
+            try {
+                color = averageTextureLayers(java.util.List.of(createLocation(
+                        itemId.getNamespace(), "textures/item/" + itemId.getPath() + ".png")), resourceManager);
+            } catch (IOException | RuntimeException ignored) { }
+        }
+        ITEM_COLOR_CACHE.put(itemId, Optional.ofNullable(color));
+        return color;
+    }
+
+    private static java.util.List<ResourceLocation> modelTextures(ResourceLocation itemId, ResourceManager resourceManager)
+            throws IOException {
+        java.util.List<ResourceLocation> result = java.util.List.of();
+        //? if >=1.21.11 {
+        result = modernModelTextures(itemId, resourceManager);
+        //?}
+        if (result.isEmpty()) {
+            JsonObject model = readJson(createLocation(
+                    itemId.getNamespace(), "models/item/" + itemId.getPath() + ".json"), resourceManager);
+            result = modelTextures(model);
+        }
+        return result;
+    }
+
+    private static java.util.List<ResourceLocation> modernModelTextures(ResourceLocation itemId,
+                                                                        ResourceManager resourceManager)
+            throws IOException {
+        JsonObject item = readJson(createLocation(
+                itemId.getNamespace(), "items/" + itemId.getPath() + ".json"), resourceManager);
+        JsonObject modelNode = item != null && item.has("model") && item.get("model").isJsonObject()
+                ? item.getAsJsonObject("model") : null;
+        String modelId = modelNode != null && modelNode.has("model")
+                ? modelNode.get("model").getAsString() : null;
+        if (modelId == null) return java.util.List.of();
+        try {
+            ResourceLocation modelLocation = parseLocation(modelId);
+            return modelTextures(readJson(createLocation(modelLocation.getNamespace(),
+                    "models/" + modelLocation.getPath() + ".json"), resourceManager));
+        } catch (RuntimeException ignored) {
+            return java.util.List.of();
+        }
+    }
+
+    private static java.util.List<ResourceLocation> modelTextures(JsonObject model) {
+        if (model == null || !model.has("textures") || !model.get("textures").isJsonObject()) return java.util.List.of();
+        JsonObject textures = model.getAsJsonObject("textures");
+        java.util.List<ResourceLocation> result = new java.util.ArrayList<>();
+        for (int layer = 0; layer < 3; layer++) {
+            if (textures.has("layer" + layer) && textures.get("layer" + layer).isJsonPrimitive()) {
+                String textureId = textures.get("layer" + layer).getAsString();
+                if (!textureId.startsWith("#")) {
+                    try {
+                        ResourceLocation location = parseLocation(textureId);
+                        result.add(createLocation(location.getNamespace(),
+                                "textures/" + location.getPath() + ".png"));
+                    } catch (RuntimeException ignored) { }
+                }
+            }
+        }
+        return result;
+    }
+
+    private static JsonObject readJson(ResourceLocation location, ResourceManager resourceManager) throws IOException {
+        var resource = resourceManager.getResource(location);
+        if (resource.isEmpty()) return null;
+        try (InputStream stream = resource.get().open()) {
+            JsonElement json = JsonParser.parseReader(new java.io.InputStreamReader(stream, StandardCharsets.UTF_8));
+            return json.isJsonObject() ? json.getAsJsonObject() : null;
+        }
+    }
+
+    private static ResourceLocation parseLocation(String value) {
+        //? if >=1.21 {
+        return ResourceLocation.parse(value);
+        //?} else {
+        /*return new ResourceLocation(value);
+        *///?}
+    }
+
+    private static ResourceLocation createLocation(String namespace, String path) {
+        //? if >=1.21 {
+        return ResourceLocation.fromNamespaceAndPath(namespace, path);
+        //?} else {
+        /*return new ResourceLocation(namespace, path);
+        *///?}
+    }
+
+    private static Integer averageTextureLayers(java.util.List<ResourceLocation> textures, ResourceManager resourceManager)
+            throws IOException {
+        long red = 0, green = 0, blue = 0, alpha = 0;
+        int peak = 0;
+        for (ResourceLocation texture : textures) {
+            var resource = resourceManager.getResource(texture);
+            if (resource.isEmpty()) continue;
+            try (InputStream stream = resource.get().open()) {
+                BufferedImage image = ImageIO.read(stream);
+                if (image == null) continue;
+                for (int y = 0; y < image.getHeight(); y++) {
+                    for (int x = 0; x < image.getWidth(); x++) {
+                        int pixel = image.getRGB(x, y);
+                        int weight = pixel >>> 24;
+                        if (weight > 0) {
+                            peak = Math.max(peak, Math.max(Math.max((pixel >>> 16 & 255) * weight / 255,
+                                    (pixel >>> 8 & 255) * weight / 255), (pixel & 255) * weight / 255));
+                        }
+                        red += (long) ((pixel >>> 16) & 255) * weight;
+                        green += (long) ((pixel >>> 8) & 255) * weight;
+                        blue += (long) (pixel & 255) * weight;
+                        alpha += weight;
+                    }
+                }
+            }
+        }
+        if (alpha == 0) return null;
+        int averageRed = (int) (red / alpha), averageGreen = (int) (green / alpha), averageBlue = (int) (blue / alpha);
+        int averagePeak = Math.max(averageRed, Math.max(averageGreen, averageBlue));
+        if (averagePeak > 0) {
+            peak = Math.max(peak, averagePeak);
+            averageRed = Math.min(255, averageRed * peak / averagePeak);
+            averageGreen = Math.min(255, averageGreen * peak / averagePeak);
+            averageBlue = Math.min(255, averageBlue * peak / averagePeak);
+        }
+        return averageRed << 16 | averageGreen << 8 | averageBlue;
+    }
 
     static String stripEquipmentSuffix(String path) {
         for (String suffix : new String[]{"_helmet", "_chestplate", "_leggings", "_boots"}) {
@@ -223,5 +372,6 @@ public final class ArmorBarRegistry {
         TEXTURE_CACHE.clear();
         ALPHA_MASK_CACHE.clear();
         TRIM_ALPHA_MASK_CACHE.clear();
+        ITEM_COLOR_CACHE.clear();
     }
 }

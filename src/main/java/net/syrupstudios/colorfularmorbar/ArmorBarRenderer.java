@@ -305,11 +305,15 @@ public final class ArmorBarRenderer {
     }
 
     private static ArmorPoint createArmorPoint(ItemStack stack, Minecraft minecraft, EquipmentSlot slot) {
-        var texture = ArmorBarRegistry.getTexture(stack, minecraft.getResourceManager());
+        var textureResult = ArmorBarRegistry.getTexture(stack, minecraft.getResourceManager());
+        var texture = textureResult.texture();
         boolean enchanted = stack.hasFoil();
         ArmorTrim trim = getTrim(stack, minecraft);
         boolean[] alphaMask = ArmorBarRegistry.getAlphaMask(texture, minecraft.getResourceManager());
         Integer leatherColor = getLeatherColor(stack);
+        if (textureResult.fallback() && leatherColor == null) {
+            leatherColor = ArmorBarRegistry.getItemColor(stack, minecraft.getResourceManager());
+        }
         Integer trimColor = trim == null ? null : getTrimColor(trim);
         boolean[] trimMask = trim == null
                 ? null
