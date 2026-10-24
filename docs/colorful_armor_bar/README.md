@@ -21,7 +21,7 @@ The following effects are enabled by default:
 
 | Key | Default | Effect |
 | --- | --- | --- |
-| `armor_icon_animation` | `true` | Wipe animation when armor icons change. |
+| `armor_icon_animation` | `true` | Move unchanged icons to new positions; wipe other icon changes. |
 | `damage_pulse` | `true` | Red pulse when armor takes damage. |
 | `repair_pulse` | `true` | Cyan pulse when armor is repaired, including by Mending. |
 | `trim_glow` | `true` | Pulsing highlight on amethyst, diamond, and emerald trims. |

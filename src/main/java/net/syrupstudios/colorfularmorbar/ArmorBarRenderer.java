@@ -238,6 +238,31 @@ public final class ArmorBarRenderer {
         List<GlintSegment> glintSegments = new ArrayList<>();
 
         int left = guiGraphics.guiWidth() / 2 - 91;
+        int[] movingFrom = new int[10];
+        java.util.Arrays.fill(movingFrom, -1);
+        boolean[] movingSources = new boolean[10];
+        boolean[] movingDestinations = new boolean[10];
+        if (animating) {
+            boolean[] matchedOldCells = new boolean[10];
+            for (int cell = 0; cell < 10; cell++) {
+                if (sameCell(previousPoints, cell, renderPoints, cell)) {
+                    matchedOldCells[cell] = true;
+                }
+            }
+            for (int cell = 0; cell < 10; cell++) {
+                if (sameCell(previousPoints, cell, renderPoints, cell)) continue;
+                for (int oldCell = 0; oldCell < 10; oldCell++) {
+                    if (!matchedOldCells[oldCell] && oldCell != cell
+                            && sameCell(previousPoints, oldCell, renderPoints, cell)) {
+                        movingFrom[cell] = oldCell;
+                        movingDestinations[cell] = true;
+                        movingSources[oldCell] = true;
+                        matchedOldCells[oldCell] = true;
+                        break;
+                    }
+                }
+            }
+        }
 
         // 1.21.1 needs explicit blending to avoid a black bar behind the icons.
         //? if <1.21.11 {
@@ -246,15 +271,20 @@ public final class ArmorBarRenderer {
         //?}
 
         for (int j = 0; j < 10; j++) {
+            drawEmptyIcon(guiGraphics, left + j * 8, armorTop);
+        }
+        for (int j = 0; j < 10; j++) {
             int x = left + j * 8;
 
             ArmorPoint oldLeft = previousPoints.get(j * 2);
             ArmorPoint oldRight = previousPoints.get(j * 2 + 1);
             ArmorPoint newLeft = renderPoints.get(j * 2);
             ArmorPoint newRight = renderPoints.get(j * 2 + 1);
+            if (movingSources[j]) oldLeft = oldRight = null;
+            if (movingDestinations[j]) newLeft = newRight = null;
             if (!animating || (oldLeft == null ? newLeft == null : oldLeft.equals(newLeft))
                     && (oldRight == null ? newRight == null : oldRight.equals(newRight))) {
-                drawIcon(guiGraphics, x, armorTop, newLeft, newRight, glintSegments, -1, -1);
+                drawIconContents(guiGraphics, x, armorTop, newLeft, newRight, glintSegments, -1, -1);
                 continue;
             }
 
@@ -262,7 +292,7 @@ public final class ArmorBarRenderer {
             if (reveal < 9) {
                 guiGraphics.enableScissor(x + reveal, armorTop, x + 9, armorTop + 9);
                 try {
-                    drawIcon(guiGraphics, x, armorTop, oldLeft, oldRight, glintSegments, x + reveal, x + 9);
+                    drawIconContents(guiGraphics, x, armorTop, oldLeft, oldRight, glintSegments, x + reveal, x + 9);
                 } finally {
                     guiGraphics.disableScissor();
                 }
@@ -270,10 +300,19 @@ public final class ArmorBarRenderer {
             if (reveal > 0) {
                 guiGraphics.enableScissor(x, armorTop, x + reveal, armorTop + 9);
                 try {
-                    drawIcon(guiGraphics, x, armorTop, newLeft, newRight, glintSegments, x, x + reveal);
+                    drawIconContents(guiGraphics, x, armorTop, newLeft, newRight, glintSegments, x, x + reveal);
                 } finally {
                     guiGraphics.disableScissor();
                 }
+            }
+        }
+        for (int j = 0; j < 10; j++) {
+            if (movingFrom[j] >= 0) {
+                int x = left + j * 8;
+                int sourceX = left + movingFrom[j] * 8;
+                int movingX = Math.round(sourceX + (x - sourceX) * transition);
+                drawIconContents(guiGraphics, movingX, armorTop,
+                        renderPoints.get(j * 2), renderPoints.get(j * 2 + 1), glintSegments, -1, -1);
             }
         }
 
@@ -281,8 +320,7 @@ public final class ArmorBarRenderer {
         return true;
     }
 
-    private static void drawIcon(GuiGraphics guiGraphics, int x, int y, ArmorPoint leftPoint, ArmorPoint rightPoint,
-                                 List<GlintSegment> glintSegments, int clipStart, int clipEnd) {
+    private static void drawEmptyIcon(GuiGraphics guiGraphics, int x, int y) {
         //? if >=1.21.11 {
         /*guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, ARMOR_EMPTY_SPRITE, x, y, 9, 9);
         *///?} elif >=1.21 {
@@ -290,6 +328,10 @@ public final class ArmorBarRenderer {
         //?} else {
         /*guiGraphics.blit(VANILLA_GUI_ICONS, x, y, 16, 9, 9, 9);
         *///?}
+    }
+
+    private static void drawIconContents(GuiGraphics guiGraphics, int x, int y, ArmorPoint leftPoint, ArmorPoint rightPoint,
+                                         List<GlintSegment> glintSegments, int clipStart, int clipEnd) {
         if (leftPoint != null && leftPoint.equals(rightPoint)) {
             blitPoint(guiGraphics, leftPoint, x, y, 0, 9, glintSegments, clipStart, clipEnd);
         } else if (leftPoint != null && rightPoint == null) {
@@ -302,6 +344,16 @@ public final class ArmorBarRenderer {
                 blitPoint(guiGraphics, rightPoint, x + 5, y, 5, 4, glintSegments, clipStart, clipEnd);
             }
         }
+    }
+
+    private static boolean sameCell(List<ArmorPoint> first, int firstCell, List<ArmorPoint> second, int secondCell) {
+        ArmorPoint firstLeft = first.get(firstCell * 2);
+        ArmorPoint secondLeft = second.get(secondCell * 2);
+        ArmorPoint firstRight = first.get(firstCell * 2 + 1);
+        ArmorPoint secondRight = second.get(secondCell * 2 + 1);
+        return (firstLeft != null || firstRight != null)
+                && java.util.Objects.equals(firstLeft, secondLeft)
+                && java.util.Objects.equals(firstRight, secondRight);
     }
 
     private static ArmorPoint createArmorPoint(ItemStack stack, Minecraft minecraft, EquipmentSlot slot) {
