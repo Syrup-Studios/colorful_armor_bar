@@ -5,6 +5,7 @@
 ## Features
 
 - Mix-and-match armor icons for different armor materials.
+- Leather icons show the armor's dye color.
 - Trim marks colored by the trim material.
 - Client-side; the server does not need the mod.
 

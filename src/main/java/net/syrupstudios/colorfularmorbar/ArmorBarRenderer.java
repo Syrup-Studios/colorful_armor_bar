@@ -39,6 +39,16 @@ import net.minecraft.world.item.armortrim.ArmorTrim;
 import net.minecraft.client.Minecraft;
 //? if >=1.21
 import net.minecraft.core.component.DataComponents;
+//? if >=1.21
+import net.minecraft.world.item.component.DyedItemColor;
+//? if >=1.21.11 {
+/*
+import net.minecraft.world.item.equipment.Equippable;
+*///?}
+//? if <1.21 {
+/*
+import net.minecraft.world.item.DyeableLeatherItem;
+*///?}
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
@@ -108,7 +118,7 @@ public final class ArmorBarRenderer {
     private ArmorBarRenderer() {
     }
 
-    private record ArmorPoint(ResourceLocation texture, boolean enchanted, boolean[] alphaMask, Integer trimColor,
+    private record ArmorPoint(ResourceLocation texture, boolean enchanted, boolean[] alphaMask, Integer leatherColor, Integer trimColor,
                               boolean[] trimMask) {
     }
 
@@ -152,7 +162,7 @@ public final class ArmorBarRenderer {
 
         List<ArmorPoint> points = ArmorBarLayout.build(
                 player.getArmorValue(), contributions,
-                new ArmorPoint(ArmorBarRegistry.FALLBACK_TEXTURE, false, null, null, null),
+                new ArmorPoint(ArmorBarRegistry.FALLBACK_TEXTURE, false, null, null, null, null),
                 ColorfulArmorBarConfig.GROUP_MATCHING_ARMOR.get());
         List<GlintSegment> glintSegments = new ArrayList<>();
 
@@ -202,12 +212,37 @@ public final class ArmorBarRenderer {
         boolean[] alphaMask = enchanted || trim != null
                 ? ArmorBarRegistry.getAlphaMask(texture, minecraft.getResourceManager())
                 : null;
+        Integer leatherColor = getLeatherColor(stack);
         Integer trimColor = trim == null ? null : getTrimColor(trim);
         boolean[] trimMask = trim == null
                 ? null
                 : ArmorBarRegistry.getTrimAlphaMask(
                         trim.pattern().value().assetId(), minecraft.getResourceManager());
-        return new ArmorPoint(texture, enchanted, alphaMask, trimColor, trimMask);
+        return new ArmorPoint(texture, enchanted, alphaMask, leatherColor, trimColor, trimMask);
+    }
+
+    private static Integer getLeatherColor(ItemStack stack) {
+        //? if >=1.21.11 {
+        /*
+        Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
+        ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (equippable == null || !itemId.getPath().startsWith("leather_")
+                && !equippable.assetId().map(key -> key.identifier().equals(ResourceLocation.fromNamespaceAndPath("minecraft", "leather"))).orElse(false)) {
+            return null;
+        }
+        DyedItemColor dyedColor = stack.get(DataComponents.DYED_COLOR);
+        return dyedColor == null ? DyedItemColor.LEATHER_COLOR : dyedColor.rgb();
+        *///?} elif >=1.21 {
+        if (!(stack.getItem() instanceof ArmorItem armorItem)
+                || armorItem.getMaterial().unwrapKey().map(key -> !key.location().equals(ResourceLocation.fromNamespaceAndPath("minecraft", "leather"))).orElse(true)) {
+            return null;
+        }
+        DyedItemColor dyedColor = stack.get(DataComponents.DYED_COLOR);
+        return dyedColor == null ? DyedItemColor.LEATHER_COLOR : dyedColor.rgb();
+        //?} else {
+        /*
+        return stack.getItem() instanceof DyeableLeatherItem leather ? leather.getColor(stack) : null;
+        *///?}
     }
 
     private static ArmorTrim getTrim(ItemStack stack, Minecraft minecraft) {
@@ -227,7 +262,11 @@ public final class ArmorBarRenderer {
 
     private static void blitPoint(GuiGraphics guiGraphics, ArmorPoint point, int x, int y, int u, int width,
                                   List<GlintSegment> glintSegments) {
-        blit(guiGraphics, point.texture(), x, y, u, 0, width, 9);
+        if (point.leatherColor() != null) {
+            blitTinted(guiGraphics, point.texture(), x, y, u, 0, width, 9, point.leatherColor());
+        } else {
+            blit(guiGraphics, point.texture(), x, y, u, 0, width, 9);
+        }
         if (point.trimColor() != null) {
             renderTrimIcon(guiGraphics, x, y, u, width, point.trimColor(), point.trimMask(), point.alphaMask());
         }
@@ -317,6 +356,21 @@ public final class ArmorBarRenderer {
         /*guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height, 18, 9);
         *///?} else {
         guiGraphics.blit(texture, x, y, u, v, width, height, 18, 9);
+        //?}
+    }
+
+    private static void blitTinted(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int u, int v,
+                                   int width, int height, int color) {
+        //? if >=1.21.11 {
+        /*guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height, 18, 9,
+                0xFF000000 | color);
+        *///?} else {
+        guiGraphics.flush();
+        guiGraphics.setColor((color >> 16 & 255) / 255.0F, (color >> 8 & 255) / 255.0F,
+                (color & 255) / 255.0F, 1.0F);
+        blit(guiGraphics, texture, x, y, u, v, width, height);
+        guiGraphics.flush();
+        guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
         //?}
     }
 

@@ -37,6 +37,8 @@ The mod checks this path:
 
 Armor-icon textures must be 18 pixels wide by 9 pixels high. The left and right
 9-pixel halves are used for full and half-point rendering.
+The leather icon is tinted with the armor's dye color. Use a white or grayscale
+leather texture to keep dye colors accurate.
 
 Each trim pattern can provide a texture at:
 
