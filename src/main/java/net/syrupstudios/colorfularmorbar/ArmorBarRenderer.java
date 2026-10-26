@@ -338,7 +338,14 @@ public final class ArmorBarRenderer {
             blitPoint(guiGraphics, leftPoint, x, y, 9, 9, glintSegments, clipStart, clipEnd);
         } else {
             if (leftPoint != null) {
-                blitPoint(guiGraphics, leftPoint, x, y, 0, 5, glintSegments, clipStart, clipEnd);
+                blitPoint(guiGraphics, leftPoint, x, y, 0, 4, glintSegments, clipStart, clipEnd);
+            }
+            if (leftPoint != null && rightPoint != null) {
+                for (int row = 0; row < 9; row++) {
+                    if (leftPoint.alphaMask()[row * 18 + 4] || rightPoint.alphaMask()[row * 18 + 4]) {
+                        guiGraphics.fill(x + 4, y + row, x + 5, y + row + 1, 0xFF000000);
+                    }
+                }
             }
             if (rightPoint != null) {
                 blitPoint(guiGraphics, rightPoint, x + 5, y, 5, 4, glintSegments, clipStart, clipEnd);

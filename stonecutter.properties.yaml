@@ -2,7 +2,7 @@ mod:
   id: colorful_armor_bar
   name: Colorful Armor Bar
   group: net.syrupstudios
-  version: 1.1.0
+  version: 1.1.1
   description: A mod to add colors to the armor bar using texture packs!.
   authors: SodaSyrup
   license: RSL-1.0
