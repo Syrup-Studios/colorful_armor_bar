@@ -145,12 +145,12 @@ public final class ArmorBarRegistry {
         try {
             var modelTextures = modelTextures(itemId, resourceManager);
             if (!modelTextures.isEmpty()) {
-                color = averageTextureLayers(modelTextures, resourceManager);
+                color = modeTextureLayers(modelTextures, resourceManager);
             }
         } catch (IOException | RuntimeException ignored) { }
         if (color == null) {
             try {
-                color = averageTextureLayers(java.util.List.of(createLocation(
+                color = modeTextureLayers(java.util.List.of(createLocation(
                         itemId.getNamespace(), "textures/item/" + itemId.getPath() + ".png")), resourceManager);
             } catch (IOException | RuntimeException ignored) { }
         }
@@ -235,9 +235,9 @@ public final class ArmorBarRegistry {
         *///?}
     }
 
-    private static Integer averageTextureLayers(java.util.List<ResourceLocation> textures, ResourceManager resourceManager)
+    private static Integer modeTextureLayers(java.util.List<ResourceLocation> textures, ResourceManager resourceManager)
             throws IOException {
-        long red = 0, green = 0, blue = 0, alpha = 0;
+        Map<Integer, Long> colorWeights = new HashMap<>();
         int peak = 0;
         for (ResourceLocation texture : textures) {
             var resource = resourceManager.getResource(texture);
@@ -250,27 +250,32 @@ public final class ArmorBarRegistry {
                         int pixel = image.getRGB(x, y);
                         int weight = pixel >>> 24;
                         if (weight > 0) {
+                            colorWeights.merge(pixel & 0x00FFFFFF, (long) weight, Long::sum);
                             peak = Math.max(peak, Math.max(Math.max((pixel >>> 16 & 255) * weight / 255,
                                     (pixel >>> 8 & 255) * weight / 255), (pixel & 255) * weight / 255));
                         }
-                        red += (long) ((pixel >>> 16) & 255) * weight;
-                        green += (long) ((pixel >>> 8) & 255) * weight;
-                        blue += (long) (pixel & 255) * weight;
-                        alpha += weight;
                     }
                 }
             }
         }
-        if (alpha == 0) return null;
-        int averageRed = (int) (red / alpha), averageGreen = (int) (green / alpha), averageBlue = (int) (blue / alpha);
-        int averagePeak = Math.max(averageRed, Math.max(averageGreen, averageBlue));
-        if (averagePeak > 0) {
-            peak = Math.max(peak, averagePeak);
-            averageRed = Math.min(255, averageRed * peak / averagePeak);
-            averageGreen = Math.min(255, averageGreen * peak / averagePeak);
-            averageBlue = Math.min(255, averageBlue * peak / averagePeak);
+        int mode = -1;
+        long modeWeight = 0;
+        for (var entry : colorWeights.entrySet()) {
+            if (entry.getValue() > modeWeight || (entry.getValue() == modeWeight && entry.getKey() < mode)) {
+                mode = entry.getKey();
+                modeWeight = entry.getValue();
+            }
         }
-        return averageRed << 16 | averageGreen << 8 | averageBlue;
+        if (mode < 0) return null;
+        int modePeak = Math.max(mode >>> 16 & 255, Math.max(mode >>> 8 & 255, mode & 255));
+        if (modePeak > 0) {
+            peak = Math.max(peak, modePeak);
+            int red = Math.min(255, (mode >>> 16 & 255) * peak / modePeak);
+            int green = Math.min(255, (mode >>> 8 & 255) * peak / modePeak);
+            int blue = Math.min(255, (mode & 255) * peak / modePeak);
+            mode = red << 16 | green << 8 | blue;
+        }
+        return mode;
     }
 
     static String stripEquipmentSuffix(String path) {

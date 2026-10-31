@@ -1,3 +1,3 @@
-## 1.1.1
+## 1.1.2
 
-- Add a black center line where two different armor halves meet.
+- Use the most frequent item texture color for armor bar fallbacks. (mode sampling)

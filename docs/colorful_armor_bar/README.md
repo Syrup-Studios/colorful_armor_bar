@@ -70,10 +70,11 @@ Amethyst, diamond, and emerald trims also receive a subtle pulsing white
 highlight inside the existing trim and armor masks.
 
 If the mod cannot find a texture for an armor material, it uses the default
-iron-style texture. The mod samples the alpha-weighted average of the
-nontransparent pixels in the item's declared `layer0` to `layer2` textures,
-then scales that average to the brightest visible source channel. This brightens
-the tint while preserving its hue and the iron texture's shading. For modern
+iron-style texture. The mod selects the RGB color with the highest total alpha
+weight across nontransparent pixels in the item's declared `layer0` to `layer2`
+textures. Ties use the lowest RGB value. It then scales that color to the
+brightest visible source channel. This brightens the tint while preserving its
+hue and the iron texture's shading. For modern
 item definitions, it follows a direct model reference. If those textures are
 unavailable or use unsupported references, it tries
 `textures/item/<item id>.png`. It does not
